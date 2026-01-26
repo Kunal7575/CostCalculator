@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UofG Cost Calculator Prototype</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    label { display:block; font-size: 12px; color:#444; margin-bottom: 4px; }
+    select { min-width: 260px; padding: 8px; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; margin-top: 16px; }
+    .kpi { font-size: 22px; font-weight: 700; }
+    .muted { color:#666; font-size: 12px; }
+    table { width:100%; border-collapse: collapse; margin-top: 12px; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    td:last-child { text-align: right; }
+  </style>
+</head>
+<body>
+  <h2>Undergraduate Cost Calculator (Prototype)</h2>
+  <p class="muted">Loads data from <code>data.json</code> and calculates totals.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Residency</label>
+        <select id="residency">
+          <option value="Domestic">Domestic</option>
+          <option value="International">International</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Province</label>
+        <select id="province">
+          <option value="ON">ON</option>
+          <option value="Non-ON">Non-ON</option>
+          <option value="INT">INT</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Load</label>
+        <select id="load">
+          <option value="Full-time">Full-time</option>
+          <option value="Part-time">Part-time</option>
+        </select>
+      </div>
+
+      <div>
+        <label>CohortYear</label>
+        <select id="cohort">
+          <option value="2025-2026">2025-2026</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>Program</label>
+        <select id="program"></select>
+      </div>
+
+      <div>
+        <label>Major</label>
+        <select id="major"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Living</h3>
+    <div class="row">
+      <div>
+        <label>Housing</label>
+        <select id="housing">
+          <option value="None">None</option>
+          <option value="OnCampus">On-campus</option>
+          <option value="OffCampus">Off-campus</option>
+        </select>
+      </div>
+
+      <div>
+        <label>On-campus option</label>
+        <select id="oncampus" disabled></select>
+      </div>
+
+      <div>
+        <label>Off-campus option</label>
+        <select id="offcampus" disabled></select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>Meal plan</label>
+        <select id="mealplan">
+          <option value="None">None</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="kpi" id="grandTotal">$0.00</div>
+    <div class="muted">Estimated total (tuition + selected living + selected meal plan)</div>
+
+    <table id="breakdown"></table>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
