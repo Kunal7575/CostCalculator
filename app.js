@@ -5,9 +5,12 @@ const $ = (id) => document.getElementById(id);
 /* -----------------------
    Helpers
 ------------------------ */
-
 function cleanText(s) {
   return String(s ?? "").trim();
+}
+
+function normalizeResidence(s) {
+  return cleanText(s).toUpperCase(); // keeps matching consistent
 }
 
 function unique(arr) {
@@ -38,6 +41,7 @@ function fmt(n) {
 }
 
 function setOptions(selectEl, values, placeholder = null) {
+  if (!selectEl) return;
   selectEl.innerHTML = "";
   if (placeholder) {
     const opt = document.createElement("option");
@@ -54,11 +58,24 @@ function setOptions(selectEl, values, placeholder = null) {
 }
 
 /* -----------------------
-   Tuition filtering
+   Label builders (must match everywhere)
 ------------------------ */
+function onCampusLabel(row) {
+  // Keeping this in case you still use it elsewhere, but we no longer build a giant on-campus dropdown.
+  return `${cleanText(row.ResidenceArea)} - ${cleanText(row.RoomType)}`;
+}
+
+/* -----------------------
+   Current selections / filters
+------------------------ */
+function getLevel() {
+  // Requires <select id="level"> in HTML
+  return cleanText($("level")?.value || "Undergraduate");
+}
 
 function currentFilters() {
   return {
+    Level: getLevel(),
     Residency: $("residency").value,
     Province: $("province").value,
     Load: $("load").value,
@@ -66,24 +83,67 @@ function currentFilters() {
   };
 }
 
-function getFilteredTuitionRows() {
+/* -----------------------
+   Tuition sources (UG + Grad)
+------------------------ */
+function getTuitionRows() {
   const f = currentFilters();
-  const source = DATA?.Tuition_Fees ?? [];
 
-  const rows = source.map(r => ({
-    ...r,
+  if (f.Level === "Graduate") {
+    const src = DATA?.Tuition_Fees_Graduate ?? [];
+    return src.map(r => ({
+      Level: "Graduate",
+      Program: cleanText(r.Program),
+      // Grad sheet appears to have no Major and no Province
+      Major: "",
+      Residency: cleanText(r.Residency),
+      Province: "",
+      Load: cleanText(r.Load),
+      CohortYear: cleanText(r.CohortYear),
+
+      FallTotalN: moneyToNumber(r.FallTotal),
+      WinterTotalN: moneyToNumber(r.WinterTotal),
+      SummerTotalN: moneyToNumber(r.SummerTotal),
+
+      FallWinterTotalN: moneyToNumber(r.FallWinterTotal),
+    }));
+  }
+
+  // Undergraduate
+  const src = DATA?.Tuition_Fees ?? [];
+  return src.map(r => ({
+    Level: "Undergraduate",
     Program: cleanText(r.Program),
     Major: cleanText(r.Major),
     Residency: cleanText(r.Residency),
     Province: cleanText(r.Province),
     Load: cleanText(r.Load),
     CohortYear: cleanText(r.CohortYear),
+
     FallTotalN: moneyToNumber(r.FallTotal),
     WinterTotalN: moneyToNumber(r.WinterTotal),
+    SummerTotalN: null,
     FallWinterTotalN: moneyToNumber(r.FallWinterTotal),
   }));
+}
 
+function getFilteredTuitionRows() {
+  const f = currentFilters();
+  const rows = getTuitionRows();
+
+  if (f.Level === "Graduate") {
+    // Grad: no Province, no Major. Filter by Residency + Load + CohortYear.
+    return rows.filter(r =>
+      r.Level === "Graduate" &&
+      r.Residency === f.Residency &&
+      r.Load === f.Load &&
+      r.CohortYear === f.CohortYear
+    );
+  }
+
+  // Undergrad: includes province
   return rows.filter(r =>
+    r.Level === "Undergraduate" &&
     r.Residency === f.Residency &&
     r.Province === f.Province &&
     r.Load === f.Load &&
@@ -94,16 +154,29 @@ function getFilteredTuitionRows() {
 /* -----------------------
    Program/Major UI
 ------------------------ */
-
 function updateProgramMajor() {
+  const level = getLevel();
   const rows = getFilteredTuitionRows();
+
+  // Programs
   const programs = unique(rows.map(r => r.Program)).filter(Boolean).sort();
-
   setOptions($("program"), programs, "Select program");
-
-  // auto-select first program if available
   if (programs.length) $("program").value = programs[0];
 
+  // Major behaviour depends on level
+  if (level === "Graduate") {
+    // Disable major in grad mode (since data has no Major)
+    if ($("major")) {
+      setOptions($("major"), [], "N/A for Graduate");
+      $("major").value = "";
+      $("major").disabled = true;
+    }
+    compute();
+    return;
+  }
+
+  // Undergrad: enable + populate majors
+  if ($("major")) $("major").disabled = false;
   updateMajors();
 }
 
@@ -116,7 +189,6 @@ function updateMajors() {
   ).filter(Boolean).sort();
 
   setOptions($("major"), majors, "Select major");
-
   if (majors.length) $("major").value = majors[0];
 
   compute();
@@ -125,56 +197,82 @@ function updateMajors() {
 /* -----------------------
    Living / Meal dropdowns
 ------------------------ */
-
 function updateLivingDropdowns() {
-  const onCampusRows = DATA?.On_campus_Living_Costs ?? [];
   const offCampusRows = DATA?.Off_campus_Living_Costs ?? [];
   const mealRows = DATA?.Meal_Plan ?? [];
 
-  // ---- On-campus dropdown: "ResidenceArea — RoomType"
-  const oc = onCampusRows.map(r => ({
-    label: `${cleanText(r.ResidenceArea)} - ${cleanText(r.RoomType)}`,
+  // ----- On-campus: RoomType -> ResidenceArea -----
+  const onCampusRows = DATA?.On_campus_Living_Costs ?? [];
+
+  // Build clean rows
+  const ocRows = onCampusRows.map(r => ({
+    room: cleanText(r.RoomType),
+    res: normalizeResidence(r.ResidenceArea),
     fall: moneyToNumber(r["Fall Term"]),
     winter: moneyToNumber(r["Winter Term"]),
     total: moneyToNumber(r.Cost),
-    deposit: moneyToNumber(r.Deposit),
-  })).filter(x => x.label && x.total !== null);
+  })).filter(x => x.room && x.res && x.total !== null);
 
-  setOptions($("oncampus"), oc.map(x => x.label), "Select on-campus option");
+  // Populate RoomType dropdown
+  const roomTypes = unique(ocRows.map(x => x.room)).sort();
+  setOptions($("oncampusRoom"), roomTypes, "Select room type");
 
-  // ---- Off-campus dropdown: unique RoomType (keys might have spaces)
+  // When room type changes, populate residences
+  function updateOnCampusResidences() {
+    const selectedRoom = $("oncampusRoom")?.value || "";
+    const residences = unique(
+      ocRows.filter(x => x.room === selectedRoom).map(x => x.res)
+    ).sort();
+
+    setOptions($("oncampusRes"), residences, "Select residence");
+    if (residences.length) $("oncampusRes").value = residences[0];
+  }
+
+  // Store for compute()
+  window.__OC_ROWS__ = ocRows;
+
+  // Hook change events once (overwrite any existing handler)
+  if ($("oncampusRoom")) {
+    $("oncampusRoom").onchange = () => { updateOnCampusResidences(); compute(); };
+  }
+  if ($("oncampusRes")) {
+    $("oncampusRes").onchange = () => compute();
+  }
+
+  // Initialize residences if any
+  if (roomTypes.length && $("oncampusRoom")) {
+    $("oncampusRoom").value = roomTypes[0];
+    updateOnCampusResidences();
+  }
+
+  // ----- Off-campus options (keys may have spaces) -----
   const off = offCampusRows.map(r => ({
     room: cleanText(getVal(r, "RoomType")),
     term: cleanText(getVal(r, "Term")),
     total: moneyToNumber(getVal(r, "TotalTermCost")),
   }))
-  .map(x => ({
-    ...x,
-    // Trim values like "Fall " -> "Fall"
-    term: cleanText(x.term),
-    room: cleanText(x.room),
-  }))
+  .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }))
   .filter(x => x.room && x.term && x.total !== null);
 
   const offTypes = unique(off.map(x => x.room)).sort();
   setOptions($("offcampus"), offTypes, "Select off-campus option");
 
-  // ---- Meal plan dropdown (Meal_Plan)
+  // ----- Meal plans -----
   const mp = mealRows.map(r => ({
     name: cleanText(r["Meal Plan Size"]),
-    fall: moneyToNumber(r["Semesterly cost (Fall)"]),
-    winter: moneyToNumber(r["Semesterly cost (Winter)"]),
     total: moneyToNumber(r["Total cost per year"]),
   })).filter(x => x.name);
 
   const mealSelect = $("mealplan");
-  mealSelect.innerHTML = `<option value="None">None</option>`;
-  mp.forEach(x => {
-    const opt = document.createElement("option");
-    opt.value = x.name;
-    opt.textContent = `${x.name} (${fmt(x.total)}/yr)`;
-    mealSelect.appendChild(opt);
-  });
+  if (mealSelect) {
+    mealSelect.innerHTML = `<option value="None">None</option>`;
+    mp.forEach(x => {
+      const opt = document.createElement("option");
+      opt.value = x.name;
+      opt.textContent = `${x.name} (${fmt(x.total)}/yr)`;
+      mealSelect.appendChild(opt);
+    });
+  }
 
   compute();
 }
@@ -182,50 +280,61 @@ function updateLivingDropdowns() {
 /* -----------------------
    Compute totals
 ------------------------ */
-
 function compute() {
+  const level = getLevel();
   const rows = getFilteredTuitionRows();
   const program = $("program").value;
-  const major = $("major").value;
+  const major = $("major") ? $("major").value : "";
 
-  const match = rows.find(r => r.Program === program && r.Major === major);
+  // Find tuition match
+  let match = null;
+  if (level === "Graduate") {
+    match = rows.find(r => r.Program === program);
+  } else {
+    match = rows.find(r => r.Program === program && r.Major === major);
+  }
 
-  // If no tuition match, show N/A clearly
   if (!match) {
     $("grandTotal").textContent = "N/A";
     $("breakdown").innerHTML = `
-      <tr><td>Tuition & fees (Fall+Winter)</td><td>N/A</td></tr>
+      <tr><td>Tuition & fees</td><td>N/A</td></tr>
       <tr><td colspan="2" class="muted">No matching tuition row for the selected filters.</td></tr>
     `;
     return;
   }
 
   // Tuition totals
-  const fallTuition = match.FallTotalN ?? null;
-  const winterTuition = match.WinterTotalN ?? null;
+  const fall = match.FallTotalN ?? 0;
+  const winter = match.WinterTotalN ?? 0;
 
-  const tuitionYear = match.FallWinterTotalN ?? (
-    (fallTuition !== null && winterTuition !== null) ? (fallTuition + winterTuition) : null
-  );
+  let tuitionTotal = 0;
+
+  if (level === "Graduate") {
+    // Include Summer if present
+    const summer = match.SummerTotalN ?? 0;
+
+    // Prefer explicit total if present, otherwise compute (Fall+Winter) and add Summer
+    const fallWinter = match.FallWinterTotalN ?? (fall + winter);
+    tuitionTotal = fallWinter + summer;
+  } else {
+    tuitionTotal = match.FallWinterTotalN ?? (fall + winter);
+  }
 
   // Living totals
   const housing = $("housing").value;
   let livingFall = 0, livingWinter = 0, livingYear = 0;
 
   if (housing === "OnCampus") {
-    const selected = $("oncampus").value;
+    const room = $("oncampusRoom")?.value || "";
+    const res = normalizeResidence($("oncampusRes")?.value || "");
 
-    const oc = (DATA?.On_campus_Living_Costs ?? []).map(r => ({
-      label: `${cleanText(r.ResidenceArea)} — ${cleanText(r.RoomType)}`,
-      fall: moneyToNumber(r["Fall Term"]),
-      winter: moneyToNumber(r["Winter Term"]),
-      total: moneyToNumber(r.Cost),
-    })).find(x => x.label === selected);
+    const ocRows = window.__OC_ROWS__ || [];
+    const matchOC = ocRows.find(x => x.room === room && x.res === res);
 
-    if (oc) {
-      livingFall = oc.fall ?? 0;
-      livingWinter = oc.winter ?? 0;
-      livingYear = oc.total ?? (livingFall + livingWinter);
+    if (matchOC) {
+      livingFall = matchOC.fall ?? 0;
+      livingWinter = matchOC.winter ?? 0;
+      livingYear = matchOC.total ?? (livingFall + livingWinter);
     }
   }
 
@@ -237,51 +346,46 @@ function compute() {
       term: cleanText(getVal(r, "Term")),
       total: moneyToNumber(getVal(r, "TotalTermCost")),
     }))
-    .map(x => ({
-      ...x,
-      term: cleanText(x.term),
-      room: cleanText(x.room),
-    }));
+    .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }));
 
-    const fall = off.find(x => x.room === selectedType && x.term === "Fall")?.total ?? 0;
-    const winter = off.find(x => x.room === selectedType && x.term === "Winter")?.total ?? 0;
+    const fallT = off.find(x => x.room === selectedType && x.term === "Fall")?.total ?? 0;
+    const winterT = off.find(x => x.room === selectedType && x.term === "Winter")?.total ?? 0;
 
-    livingFall = fall;
-    livingWinter = winter;
-    livingYear = fall + winter;
+    livingFall = fallT;
+    livingWinter = winterT;
+    livingYear = fallT + winterT;
   }
 
-  // Meal plan totals
+  // Meal plan totals (applies regardless of level for now)
   const meal = $("mealplan").value;
-  let mealFall = 0, mealWinter = 0, mealYear = 0;
+  let mealYear = 0;
 
   if (meal !== "None") {
     const mp = (DATA?.Meal_Plan ?? []).map(r => ({
       name: cleanText(r["Meal Plan Size"]),
-      fall: moneyToNumber(r["Semesterly cost (Fall)"]),
-      winter: moneyToNumber(r["Semesterly cost (Winter)"]),
       total: moneyToNumber(r["Total cost per year"]),
     })).find(x => x.name === meal);
 
-    if (mp) {
-      mealFall = mp.fall ?? 0;
-      mealWinter = mp.winter ?? 0;
-      mealYear = mp.total ?? (mealFall + mealWinter);
-    }
+    if (mp) mealYear = mp.total ?? 0;
   }
 
   // Grand total
-  const grand = (tuitionYear ?? 0) + livingYear + mealYear;
+  const grand = tuitionTotal + livingYear + mealYear;
   $("grandTotal").textContent = fmt(grand);
 
-  // Breakdown table (keep 0 as $0.00, not N/A)
-  const lines = [
-    ["Tuition & fees (Fall+Winter)", tuitionYear],
-    ["Living (Fall)", livingFall],
-    ["Living (Winter)", livingWinter],
-    ["Living (Total)", livingYear],
-    ["Meal plan (Total)", mealYear],
-  ];
+  // Breakdown table
+  const lines = [];
+
+  if (level === "Graduate") {
+    lines.push(["Tuition & fees (Fall+Winter+Summer)", tuitionTotal]);
+  } else {
+    lines.push(["Tuition & fees (Fall+Winter)", tuitionTotal]);
+  }
+
+  lines.push(["Living (Fall)", livingFall]);
+  lines.push(["Living (Winter)", livingWinter]);
+  lines.push(["Living (Total)", livingYear]);
+  lines.push(["Meal plan (Total)", mealYear]);
 
   $("breakdown").innerHTML = lines.map(([label, val]) => `
     <tr>
@@ -294,56 +398,96 @@ function compute() {
 /* -----------------------
    UI toggles / syncing
 ------------------------ */
-
 function toggleLivingInputs() {
   const housing = $("housing").value;
-  $("oncampus").disabled = housing !== "OnCampus";
+
+  const ocRoom = $("oncampusRoom");
+  const ocRes = $("oncampusRes");
+
+  if (ocRoom && ocRes) {
+    ocRoom.disabled = housing !== "OnCampus";
+    ocRes.disabled = housing !== "OnCampus";
+  }
+
   $("offcampus").disabled = housing !== "OffCampus";
+
   compute();
 }
 
-// Prevent impossible filter combos
 function syncProvinceToResidency() {
+  // Undergrad uses Province. Grad does not.
+  const level = getLevel();
   const residency = $("residency").value;
+
+  if (level === "Graduate") {
+    // Disable province for graduate (not used in data)
+    $("province").disabled = true;
+    return;
+  }
+
+  $("province").disabled = false;
 
   if (residency === "International") {
     $("province").value = "INT";
   } else {
-    // Domestic
     if ($("province").value === "INT") $("province").value = "ON";
+  }
+}
+
+function syncUIToLevel() {
+  const level = getLevel();
+
+  // Province only meaningful for undergrad
+  if (level === "Graduate") {
+    $("province").disabled = true;
+    // Don't force province values in graduate mode
+  } else {
+    $("province").disabled = false;
+    syncProvinceToResidency();
+  }
+
+  // Major disabled in grad mode
+  if ($("major")) {
+    $("major").disabled = (level === "Graduate");
   }
 }
 
 /* -----------------------
    Init
 ------------------------ */
-
 async function init() {
   const res = await fetch("./data.json");
   DATA = await res.json();
 
-  // Living/meal dropdowns
   updateLivingDropdowns();
-
-  // Ensure residency/province are compatible before populating tuition-driven dropdowns
-  syncProvinceToResidency();
-
-  // Populate programs/majors
+  syncUIToLevel();
   updateProgramMajor();
 
-  // Event listeners
+  // Events
+  if ($("level")) {
+    $("level").addEventListener("change", () => {
+      syncUIToLevel();
+      // Rebuild program/major choices based on level
+      updateProgramMajor();
+    });
+  }
+
   ["residency", "province", "load", "cohort"].forEach(id =>
     $(id).addEventListener("change", () => {
-      syncProvinceToResidency();
+      syncUIToLevel();
       updateProgramMajor();
     })
   );
 
-  $("program").addEventListener("change", updateMajors);
-  $("major").addEventListener("change", compute);
+  $("program").addEventListener("change", () => {
+    if (getLevel() === "Graduate") compute();
+    else updateMajors();
+  });
+
+  if ($("major")) $("major").addEventListener("change", compute);
 
   $("housing").addEventListener("change", toggleLivingInputs);
-  $("oncampus").addEventListener("change", compute);
+  // Removed: $("oncampus").addEventListener("change", compute);
   $("offcampus").addEventListener("change", compute);
   $("mealplan").addEventListener("change", compute);
 
