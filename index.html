@@ -18,13 +18,21 @@
   </style>
 </head>
 <body>
-  <h2>Undergraduate Cost Calculator (Prototype)</h2>
+  <h2>UofG Cost Calculator (Prototype)</h2>
   <p class="muted">Loads data from <code>data.json</code> and calculates totals.</p>
 
   <div class="card">
     <div class="row">
       <div>
-        <label>Residency</label>
+        <label>Upcoming Level of Study</label>
+        <select id="level">
+          <option value="Undergraduate">Undergraduate</option>
+          <option value="Graduate">Graduate</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Domestic or International</label>
         <select id="residency">
           <option value="Domestic">Domestic</option>
           <option value="International">International</option>
@@ -35,7 +43,7 @@
         <label>Province</label>
         <select id="province">
           <option value="ON">ON</option>
-          <option value="Non-ON">Non-ON</option>
+          <option value="Non-ON">Outside ON</option>
           <option value="INT">INT</option>
         </select>
       </div>
@@ -82,8 +90,13 @@
       </div>
 
       <div>
-        <label>On-campus option</label>
-        <select id="oncampus" disabled></select>
+        <label>Room type (On-campus)</label>
+        <select id="oncampusRoom" disabled></select>
+      </div>
+
+      <div>
+        <label>Residence (On-campus)</label>
+        <select id="oncampusRes" disabled></select>
       </div>
 
       <div>
