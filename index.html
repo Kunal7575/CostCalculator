@@ -22,7 +22,6 @@
     * { box-sizing: border-box; }
     html, body { height: 100%; }
 
-    /* Blurred background image behind everything */
     body::before{
       content:"";
       position: fixed;
@@ -37,7 +36,6 @@
       z-index: -2;
     }
 
-    /* Soft vignette */
     body::after{
       content:"";
       position: fixed;
@@ -53,7 +51,6 @@
       color: var(--text);
     }
 
-    /* HEADER (Topbar) */
     .topbar{
       background:
         linear-gradient(180deg, rgba(15,15,15,0.92), rgba(255,60,60,0.70)),
@@ -73,7 +70,6 @@
       min-height: 86px;
       display: flex;
       align-items: center;
-      overflow: visible;
 
       box-shadow: 0 8px 20px rgba(0,0,0,0.18);
     }
@@ -138,7 +134,6 @@
 
     .page { padding: 20px 0 40px; }
 
-    /* Cards */
     .card{
       background: rgba(255, 255, 255, 0.92);
       border: 1px solid rgba(230,231,234,0.9);
@@ -171,7 +166,6 @@
       text-align: right;
     }
 
-    /* Grid */
     .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 12px; }
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 12px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 12px; }
@@ -188,7 +182,6 @@
       .topbar{ background-position: center 20%; }
     }
 
-    /* Inputs */
     label{
       display:block;
       font-size: 12px;
@@ -227,7 +220,6 @@
       cursor: not-allowed;
     }
 
-    /* NEW: email UI inputs */
     input{
       width: 100%;
       padding: 10px 10px;
@@ -241,7 +233,6 @@
       border-color: rgba(240,193,62,0.85);
     }
 
-    /* NEW: buttons */
     button{
       border: none;
       border-radius: 12px;
@@ -274,7 +265,6 @@
       font-size: 12px;
     }
 
-    /* Totals */
     .totals{
       display: grid;
       grid-template-columns: 1fr;
@@ -309,6 +299,20 @@
       font-variant-numeric: tabular-nums;
       font-weight: 700;
     }
+    /* Summer checkbox row */
+    .check-row{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      margin:0;
+      cursor:pointer;
+    }
+    .check-row input[type="checkbox"]{
+      width:auto;
+      margin-top:3px;
+      flex:0 0 auto;
+    }
+
   </style>
 </head>
 
@@ -333,7 +337,6 @@
   <div class="page">
     <div class="container">
 
-      <!-- Tuition + student selections -->
       <div class="card">
         <div class="card-header">
           <h3>Study details</h3>
@@ -402,22 +405,25 @@
           </div>
         </div>
 
+        <!-- FIXED Summer UI -->
         <div id="summerWrap" style="display:none; margin-top:12px;">
-          <div class="field" style="display:flex; align-items:center; gap:10px;">
+        <div class="field">
+          <label class="check-row">
             <input type="checkbox" id="includeSummer" />
             <div>
               <div style="font-size:12px; font-weight:800;">Include Summer tuition (Graduate only)</div>
               <div class="muted">Turn this on only if you're taking summer courses for the selected cohort year.</div>
             </div>
-          </div>
+          </label>
         </div>
+      </div>
+
 
         <div class="section-note">
           Major is disabled for Graduate and Undergrad Part-time (program + credits based).
         </div>
       </div>
 
-      <!-- Living -->
       <div class="card">
         <div class="card-header">
           <h3>Living</h3>
@@ -461,7 +467,6 @@
         </div>
       </div>
 
-      <!-- Totals -->
       <div class="card">
         <div class="card-header">
           <h3>Total estimate</h3>
@@ -476,7 +481,6 @@
         <table id="breakdown"></table>
       </div>
 
-      <!-- Email estimate (Prototype UI only) -->
       <div class="card">
         <div class="card-header">
           <h3>Email this estimate</h3>
@@ -508,51 +512,9 @@
         <div id="emailMsg" class="section-note" style="display:none; margin-top:12px;"></div>
       </div>
 
+      <!-- Keep only app.js (email logic is already inside app.js) -->
       <script src="./app.js"></script>
 
-      <!-- Prototype-only: validate + show message (no real email) -->
-      <script>
-        const emailBtn = document.getElementById("emailEstimateBtn");
-        const clearBtn = document.getElementById("clearEmailBtn");
-        const msg = document.getElementById("emailMsg");
-
-        function isValidEmail(v){
-          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
-        }
-
-        emailBtn?.addEventListener("click", () => {
-          const firstName = (document.getElementById("firstName")?.value || "").trim();
-          const email = (document.getElementById("email")?.value || "").trim();
-
-          if (!firstName || !email || !isValidEmail(email)) {
-            msg.style.display = "block";
-            msg.textContent = "Please enter a valid first name and email address.";
-            return;
-          }
-
-          localStorage.setItem("cc_firstName", firstName);
-          localStorage.setItem("cc_email", email);
-
-          msg.style.display = "block";
-          msg.textContent =
-            `Saved for prototype!! We will email the current estimate to ${email} (delivery connection coming soon).`;
-        });
-
-        clearBtn?.addEventListener("click", () => {
-          document.getElementById("firstName").value = "";
-          document.getElementById("email").value = "";
-          localStorage.removeItem("cc_firstName");
-          localStorage.removeItem("cc_email");
-          msg.style.display = "none";
-        });
-
-        window.addEventListener("load", () => {
-          const fn = localStorage.getItem("cc_firstName");
-          const em = localStorage.getItem("cc_email");
-          if (fn) document.getElementById("firstName").value = fn;
-          if (em) document.getElementById("email").value = em;
-        });
-      </script>
     </div>
   </div>
 </body>
