@@ -1,23 +1,31 @@
-let DATA = null;
+/* =======================
+   UofG Cost Calculator - app.js (fixed)
 
+   Fixes:
+   1) Graduate Part-time now reads from Tuition_Fees_Grad_Part_tim (not Tuition_Fees_Graduate)
+   2) Load comparisons are normalized everywhere (Part-time vs Part-Time vs part time)
+   3) Province dropdown for Graduate:
+        - Disabled (as intended)
+        - Shows INT when Residency = International
+        - Shows ON when Residency = Domestic
+======================= */
+
+let DATA = null;
 const $ = (id) => document.getElementById(id);
 
 /* -----------------------
    Helpers
 ------------------------ */
-function cleanText(s) {
-  return String(s ?? "").trim();
-}
+function cleanText(s) { return String(s ?? "").trim(); }
+function normalizeResidence(s) { return cleanText(s).toUpperCase(); }
+function unique(arr) { return [...new Set(arr)]; }
 
-function normalizeResidence(s) {
-  return cleanText(s).toUpperCase(); // keeps matching consistent
+function normalizeLoadToken(s) {
+  return cleanText(s).toLowerCase().replace(/\s+/g, "").replace(/-/g, "");
 }
+function isPartTime(load) { return normalizeLoadToken(load) === "parttime"; }
+function isFullTime(load) { return normalizeLoadToken(load) === "fulltime"; }
 
-function unique(arr) {
-  return [...new Set(arr)];
-}
-
-// Finds a value even if the key in JSON has extra spaces like " Rent    "
 function getVal(obj, wantedKey) {
   if (!obj || typeof obj !== "object") return undefined;
   const foundKey = Object.keys(obj).find(k => k.trim() === wantedKey);
@@ -25,11 +33,9 @@ function getVal(obj, wantedKey) {
 }
 
 function moneyToNumber(v) {
-  // Handles "3,045.46", "$750", "N/A", null
   if (v === null || v === undefined) return null;
   const s = String(v).trim();
   if (!s || s.toUpperCase() === "N/A") return null;
-
   const normalized = s.replace(/\$/g, "").replace(/,/g, "");
   const n = Number(normalized);
   return Number.isFinite(n) ? n : null;
@@ -58,63 +64,211 @@ function setOptions(selectEl, values, placeholder = null) {
 }
 
 /* -----------------------
-   Label builders (must match everywhere)
+   Province options
+   - Undergrad:
+       Domestic -> ON, Non-ON
+       International -> INT
+   - Graduate:
+       Province disabled, but display:
+         International -> INT
+         Domestic -> ON
 ------------------------ */
-function onCampusLabel(row) {
-  // Keeping this in case you still use it elsewhere, but we no longer build a giant on-campus dropdown.
-  return `${cleanText(row.ResidenceArea)} - ${cleanText(row.RoomType)}`;
+function updateProvinceOptions() {
+  const level = cleanText($("level")?.value);
+  const residency = cleanText($("residency")?.value);
+  const provinceEl = $("province");
+  if (!provinceEl) return;
+
+  if (level === "Graduate") {
+    provinceEl.disabled = true;
+
+    if (residency === "International") {
+      setOptions(provinceEl, ["INT"]);
+      provinceEl.value = "INT";
+    } else {
+      setOptions(provinceEl, ["ON"]);
+      provinceEl.value = "ON";
+    }
+    return;
+  }
+
+  // Undergraduate
+  provinceEl.disabled = false;
+
+  if (residency === "International") {
+    setOptions(provinceEl, ["INT"]);
+    provinceEl.value = "INT";
+  } else {
+    setOptions(provinceEl, ["ON", "Non-ON"]);
+    if (provinceEl.value !== "ON" && provinceEl.value !== "Non-ON") {
+      provinceEl.value = "ON";
+    }
+  }
 }
 
 /* -----------------------
-   Current selections / filters
+   Summer UI (Graduate only)
+------------------------ */
+function setSummerUI() {
+  const level = cleanText($("level")?.value);
+  const wrap = $("summerWrap");
+  const cb = $("includeSummer");
+  if (!wrap || !cb) return;
+
+  if (level === "Graduate") {
+    wrap.style.display = "block";
+  } else {
+    wrap.style.display = "none";
+    cb.checked = false;
+  }
+}
+
+/* -----------------------
+   Credits UI
+   - UG Part-time: 0.25..1.75
+   - Grad Part-time: 0.25..1.00 (Summer uses fixed 1.25 row)
+------------------------ */
+function setCreditsUI() {
+  const level = cleanText($("level")?.value);
+  const load = cleanText($("load")?.value);
+
+  const wrap = $("creditsWrap");
+  const creditsSel = $("credits");
+  const hint = $("creditsHint");
+
+  if (!wrap || !creditsSel || !hint) return;
+
+  const ugPT = (level === "Undergraduate" && isPartTime(load));
+  const gradPT = (level === "Graduate" && isPartTime(load));
+  const show = ugPT || gradPT;
+
+  if (show) {
+    wrap.style.display = "block";
+
+    const creditOptions = gradPT
+      ? ["0.25", "0.5", "0.75", "1"]
+      : ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75"];
+
+    setOptions(creditsSel, creditOptions, "Select credits");
+
+    // Keep current selection if possible
+    if (!creditOptions.includes(cleanText(creditsSel.value))) {
+      creditsSel.value = creditOptions[0];
+    }
+
+    hint.textContent = gradPT
+      ? "Graduate part-time credits apply to Fall/Winter. Summer uses the 1.25-credit rate (if included)."
+      : "";
+
+    // Major UI handling
+    if ($("major")) {
+      if (ugPT) {
+        $("major").disabled = true;
+        $("major").innerHTML = `<option value="">N/A for part-time</option>`;
+        $("major").value = "";
+      }
+    }
+  } else {
+    wrap.style.display = "none";
+    hint.textContent = "Full-time is 2.00+ credits (no selection needed).";
+
+    if ($("major")) {
+      if (level === "Undergraduate" && isFullTime(load)) {
+        $("major").disabled = false;
+      }
+      if (level === "Graduate") {
+        $("major").disabled = true;
+        $("major").innerHTML = `<option value="">N/A for Graduate</option>`;
+        $("major").value = "";
+      }
+    }
+  }
+}
+
+/* -----------------------
+   Filters
 ------------------------ */
 function getLevel() {
-  // Requires <select id="level"> in HTML
   return cleanText($("level")?.value || "Undergraduate");
 }
 
 function currentFilters() {
   return {
     Level: getLevel(),
-    Residency: $("residency").value,
-    Province: $("province").value,
-    Load: $("load").value,
-    CohortYear: $("cohort").value
+    Residency: cleanText($("residency")?.value),
+    Province: cleanText($("province")?.value),
+    Load: cleanText($("load")?.value),
+    CohortYear: cleanText($("cohort")?.value),
+    Credits: cleanText($("credits")?.value),
   };
 }
 
 /* -----------------------
-   Tuition sources (UG + Grad)
+   Tuition sources
 ------------------------ */
+function getUndergradPartTimeRowsRaw() {
+  // In your JSON it's: Tuition_Fees_Undergrad_Part_tim
+  return DATA?.Tuition_Fees_Undergrad_Part_tim ?? [];
+}
+
+function getGradPartTimeRowsRaw() {
+  // In your JSON it's: Tuition_Fees_Grad_Part_tim
+  return DATA?.Tuition_Fees_Grad_Part_tim ?? [];
+}
+
 function getTuitionRows() {
   const f = currentFilters();
 
+  // Graduate (choose correct table based on load)
   if (f.Level === "Graduate") {
-    const src = DATA?.Tuition_Fees_Graduate ?? [];
-    return src.map(r => ({
+    const src = isPartTime(f.Load)
+      ? getGradPartTimeRowsRaw()
+      : (DATA?.Tuition_Fees_Graduate ?? []);
+
+    return (src || []).map(r => ({
       Level: "Graduate",
       Program: cleanText(r.Program),
-      // Grad sheet appears to have no Major and no Province
       Major: "",
+      Credits: cleanText(r.Credits), // present for grad PT, may be blank for grad FT
       Residency: cleanText(r.Residency),
-      Province: "",
+      Province: cleanText(r.Province),
       Load: cleanText(r.Load),
       CohortYear: cleanText(r.CohortYear),
 
       FallTotalN: moneyToNumber(r.FallTotal),
       WinterTotalN: moneyToNumber(r.WinterTotal),
       SummerTotalN: moneyToNumber(r.SummerTotal),
-
       FallWinterTotalN: moneyToNumber(r.FallWinterTotal),
     }));
   }
 
-  // Undergraduate
+  // Undergrad Part-time
+  if (isPartTime(f.Load)) {
+    const src = getUndergradPartTimeRowsRaw();
+    return (src || []).map(r => ({
+      Level: "Undergraduate",
+      Program: cleanText(r.Program),
+      Major: "",
+      Credits: cleanText(r.Credits),
+      Residency: cleanText(r.Residency),
+      Province: cleanText(r.Province),
+      Load: cleanText(r.Load),
+      CohortYear: cleanText(r.CohortYear),
+
+      FallTotalN: moneyToNumber(r.FallTotal),
+      WinterTotalN: moneyToNumber(r.WinterTotal),
+      SummerTotalN: null,
+      FallWinterTotalN: moneyToNumber(r.FallWinterTotal),
+    }));
+  }
+
+  // Undergrad Full-time
   const src = DATA?.Tuition_Fees ?? [];
-  return src.map(r => ({
+  return (src || []).map(r => ({
     Level: "Undergraduate",
     Program: cleanText(r.Program),
     Major: cleanText(r.Major),
+    Credits: "",
     Residency: cleanText(r.Residency),
     Province: cleanText(r.Province),
     Load: cleanText(r.Load),
@@ -131,17 +285,30 @@ function getFilteredTuitionRows() {
   const f = currentFilters();
   const rows = getTuitionRows();
 
+  // Graduate: Residency + Load + CohortYear (normalized load)
   if (f.Level === "Graduate") {
-    // Grad: no Province, no Major. Filter by Residency + Load + CohortYear.
+    const wantLoad = normalizeLoadToken(f.Load);
     return rows.filter(r =>
       r.Level === "Graduate" &&
       r.Residency === f.Residency &&
-      r.Load === f.Load &&
+      normalizeLoadToken(r.Load) === wantLoad &&
       r.CohortYear === f.CohortYear
     );
   }
 
-  // Undergrad: includes province
+  // UG Part-time: Residency + Province + CohortYear + Load token
+  if (isPartTime(f.Load)) {
+    const wantLoad = "parttime";
+    return rows.filter(r =>
+      r.Level === "Undergraduate" &&
+      r.Residency === f.Residency &&
+      r.Province === f.Province &&
+      r.CohortYear === f.CohortYear &&
+      normalizeLoadToken(r.Load) === wantLoad
+    );
+  }
+
+  // UG Full-time: Residency + Province + Load + CohortYear
   return rows.filter(r =>
     r.Level === "Undergraduate" &&
     r.Residency === f.Residency &&
@@ -155,17 +322,19 @@ function getFilteredTuitionRows() {
    Program/Major UI
 ------------------------ */
 function updateProgramMajor() {
-  const level = getLevel();
+  const f = currentFilters();
   const rows = getFilteredTuitionRows();
 
-  // Programs
   const programs = unique(rows.map(r => r.Program)).filter(Boolean).sort();
   setOptions($("program"), programs, "Select program");
-  if (programs.length) $("program").value = programs[0];
 
-  // Major behaviour depends on level
-  if (level === "Graduate") {
-    // Disable major in grad mode (since data has no Major)
+  // Only auto-select if we actually have options
+  if (programs.length) {
+    $("program").value = programs[0];
+  }
+
+  // Graduate
+  if (f.Level === "Graduate") {
     if ($("major")) {
       setOptions($("major"), [], "N/A for Graduate");
       $("major").value = "";
@@ -175,18 +344,29 @@ function updateProgramMajor() {
     return;
   }
 
-  // Undergrad: enable + populate majors
+  // UG Part-time
+  if (isPartTime(f.Load)) {
+    if ($("major")) {
+      $("major").disabled = true;
+      $("major").innerHTML = `<option value="">N/A for part-time</option>`;
+      $("major").value = "";
+    }
+    compute();
+    return;
+  }
+
+  // UG Full-time
   if ($("major")) $("major").disabled = false;
   updateMajors();
 }
 
 function updateMajors() {
   const rows = getFilteredTuitionRows();
-  const program = $("program").value;
+  const program = cleanText($("program")?.value);
 
-  const majors = unique(
-    rows.filter(r => r.Program === program).map(r => r.Major)
-  ).filter(Boolean).sort();
+  const majors = unique(rows.filter(r => r.Program === program).map(r => r.Major))
+    .filter(Boolean)
+    .sort();
 
   setOptions($("major"), majors, "Select major");
   if (majors.length) $("major").value = majors[0];
@@ -200,38 +380,30 @@ function updateMajors() {
 function updateLivingDropdowns() {
   const offCampusRows = DATA?.Off_campus_Living_Costs ?? [];
   const mealRows = DATA?.Meal_Plan ?? [];
-
-  // ----- On-campus: RoomType -> ResidenceArea -----
   const onCampusRows = DATA?.On_campus_Living_Costs ?? [];
 
-  // Build clean rows
-  const ocRows = onCampusRows.map(r => ({
-    room: cleanText(r.RoomType),
-    res: normalizeResidence(r.ResidenceArea),
-    fall: moneyToNumber(r["Fall Term"]),
-    winter: moneyToNumber(r["Winter Term"]),
-    total: moneyToNumber(r.Cost),
-  })).filter(x => x.room && x.res && x.total !== null);
+  const ocRows = onCampusRows
+    .map(r => ({
+      room: cleanText(r.RoomType),
+      res: normalizeResidence(r.ResidenceArea),
+      fall: moneyToNumber(r["Fall Term"]),
+      winter: moneyToNumber(r["Winter Term"]),
+      total: moneyToNumber(r.Cost),
+    }))
+    .filter(x => x.room && x.res && x.total !== null);
 
-  // Populate RoomType dropdown
   const roomTypes = unique(ocRows.map(x => x.room)).sort();
   setOptions($("oncampusRoom"), roomTypes, "Select room type");
 
-  // When room type changes, populate residences
   function updateOnCampusResidences() {
     const selectedRoom = $("oncampusRoom")?.value || "";
-    const residences = unique(
-      ocRows.filter(x => x.room === selectedRoom).map(x => x.res)
-    ).sort();
-
+    const residences = unique(ocRows.filter(x => x.room === selectedRoom).map(x => x.res)).sort();
     setOptions($("oncampusRes"), residences, "Select residence");
     if (residences.length) $("oncampusRes").value = residences[0];
   }
 
-  // Store for compute()
   window.__OC_ROWS__ = ocRows;
 
-  // Hook change events once (overwrite any existing handler)
   if ($("oncampusRoom")) {
     $("oncampusRoom").onchange = () => { updateOnCampusResidences(); compute(); };
   }
@@ -239,29 +411,29 @@ function updateLivingDropdowns() {
     $("oncampusRes").onchange = () => compute();
   }
 
-  // Initialize residences if any
   if (roomTypes.length && $("oncampusRoom")) {
     $("oncampusRoom").value = roomTypes[0];
     updateOnCampusResidences();
   }
 
-  // ----- Off-campus options (keys may have spaces) -----
-  const off = offCampusRows.map(r => ({
-    room: cleanText(getVal(r, "RoomType")),
-    term: cleanText(getVal(r, "Term")),
-    total: moneyToNumber(getVal(r, "TotalTermCost")),
-  }))
-  .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }))
-  .filter(x => x.room && x.term && x.total !== null);
+  const off = offCampusRows
+    .map(r => ({
+      room: cleanText(getVal(r, "RoomType")),
+      term: cleanText(getVal(r, "Term")),
+      total: moneyToNumber(getVal(r, "TotalTermCost")),
+    }))
+    .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }))
+    .filter(x => x.room && x.term && x.total !== null);
 
   const offTypes = unique(off.map(x => x.room)).sort();
   setOptions($("offcampus"), offTypes, "Select off-campus option");
 
-  // ----- Meal plans -----
-  const mp = mealRows.map(r => ({
-    name: cleanText(r["Meal Plan Size"]),
-    total: moneyToNumber(r["Total cost per year"]),
-  })).filter(x => x.name);
+  const mp = mealRows
+    .map(r => ({
+      name: cleanText(r["Meal Plan Size"]),
+      total: moneyToNumber(r["Total cost per year"]),
+    }))
+    .filter(x => x.name);
 
   const mealSelect = $("mealplan");
   if (mealSelect) {
@@ -281,16 +453,29 @@ function updateLivingDropdowns() {
    Compute totals
 ------------------------ */
 function compute() {
-  const level = getLevel();
+  const f = currentFilters();
   const rows = getFilteredTuitionRows();
-  const program = $("program").value;
-  const major = $("major") ? $("major").value : "";
+  const program = cleanText($("program")?.value);
 
-  // Find tuition match
   let match = null;
-  if (level === "Graduate") {
+  let matchSummerRow = null;
+
+  const gradPT = (f.Level === "Graduate" && isPartTime(f.Load));
+  const ugPT = (f.Level === "Undergraduate" && isPartTime(f.Load));
+
+  if (gradPT) {
+    const creditsFW = cleanText($("credits")?.value); // 0.25..1
+    match = rows.find(r => r.Program === program && r.Credits === creditsFW);
+
+    // Summer stored/priced as 1.25 credits in dataset
+    matchSummerRow = rows.find(r => r.Program === program && r.Credits === "1.25");
+  } else if (f.Level === "Graduate") {
     match = rows.find(r => r.Program === program);
+  } else if (ugPT) {
+    const credits = cleanText($("credits")?.value);
+    match = rows.find(r => r.Program === program && r.Credits === credits);
   } else {
+    const major = cleanText($("major")?.value);
     match = rows.find(r => r.Program === program && r.Major === major);
   }
 
@@ -303,31 +488,31 @@ function compute() {
     return;
   }
 
-  // Tuition totals
-  const fall = match.FallTotalN ?? 0;
-  const winter = match.WinterTotalN ?? 0;
+  // Tuition
+  const includeSummer = $("includeSummer")?.checked === true;
 
-  let tuitionTotal = 0;
+  const fall = match?.FallTotalN ?? 0;
+  const winter = match?.WinterTotalN ?? 0;
 
-  if (level === "Graduate") {
-    // Include Summer if present
-    const summer = match.SummerTotalN ?? 0;
+  const tuitionFallWinter = match?.FallWinterTotalN ?? (fall + winter);
 
-    // Prefer explicit total if present, otherwise compute (Fall+Winter) and add Summer
-    const fallWinter = match.FallWinterTotalN ?? (fall + winter);
-    tuitionTotal = fallWinter + summer;
+  let summer = 0;
+  if (gradPT) {
+    summer = matchSummerRow?.SummerTotalN ?? 0;
   } else {
-    tuitionTotal = match.FallWinterTotalN ?? (fall + winter);
+    summer = match?.SummerTotalN ?? 0;
   }
 
-  // Living totals
-  const housing = $("housing").value;
+  const summerUsed = (f.Level === "Graduate" && includeSummer) ? summer : 0;
+  const tuitionTotal = tuitionFallWinter + summerUsed;
+
+  // Living
+  const housing = cleanText($("housing")?.value);
   let livingFall = 0, livingWinter = 0, livingYear = 0;
 
   if (housing === "OnCampus") {
     const room = $("oncampusRoom")?.value || "";
     const res = normalizeResidence($("oncampusRes")?.value || "");
-
     const ocRows = window.__OC_ROWS__ || [];
     const matchOC = ocRows.find(x => x.room === room && x.res === res);
 
@@ -339,14 +524,15 @@ function compute() {
   }
 
   if (housing === "OffCampus") {
-    const selectedType = $("offcampus").value;
+    const selectedType = $("offcampus")?.value;
 
-    const off = (DATA?.Off_campus_Living_Costs ?? []).map(r => ({
-      room: cleanText(getVal(r, "RoomType")),
-      term: cleanText(getVal(r, "Term")),
-      total: moneyToNumber(getVal(r, "TotalTermCost")),
-    }))
-    .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }));
+    const off = (DATA?.Off_campus_Living_Costs ?? [])
+      .map(r => ({
+        room: cleanText(getVal(r, "RoomType")),
+        term: cleanText(getVal(r, "Term")),
+        total: moneyToNumber(getVal(r, "TotalTermCost")),
+      }))
+      .map(x => ({ ...x, room: cleanText(x.room), term: cleanText(x.term) }));
 
     const fallT = off.find(x => x.room === selectedType && x.term === "Fall")?.total ?? 0;
     const winterT = off.find(x => x.room === selectedType && x.term === "Winter")?.total ?? 0;
@@ -356,28 +542,35 @@ function compute() {
     livingYear = fallT + winterT;
   }
 
-  // Meal plan totals (applies regardless of level for now)
-  const meal = $("mealplan").value;
+  // Meal plan
+  const meal = cleanText($("mealplan")?.value);
   let mealYear = 0;
 
-  if (meal !== "None") {
-    const mp = (DATA?.Meal_Plan ?? []).map(r => ({
-      name: cleanText(r["Meal Plan Size"]),
-      total: moneyToNumber(r["Total cost per year"]),
-    })).find(x => x.name === meal);
+  if (meal && meal !== "None") {
+    const mp = (DATA?.Meal_Plan ?? [])
+      .map(r => ({
+        name: cleanText(r["Meal Plan Size"]),
+        total: moneyToNumber(r["Total cost per year"]),
+      }))
+      .find(x => x.name === meal);
 
     if (mp) mealYear = mp.total ?? 0;
   }
 
-  // Grand total
+  // Totals
   const grand = tuitionTotal + livingYear + mealYear;
   $("grandTotal").textContent = fmt(grand);
 
-  // Breakdown table
+  // Breakdown
   const lines = [];
 
-  if (level === "Graduate") {
-    lines.push(["Tuition & fees (Fall+Winter+Summer)", tuitionTotal]);
+  if (f.Level === "Graduate") {
+    lines.push(["Tuition & fees (Fall)", fall]);
+    lines.push(["Tuition & fees (Winter)", winter]);
+    lines.push(["Tuition & fees (Summer)", includeSummer ? summer : 0]);
+    lines.push(["Tuition & fees (Total)", tuitionTotal]);
+  } else if (ugPT) {
+    lines.push([`Tuition & fees (Fall+Winter) - ${cleanText($("credits")?.value)} credits`, tuitionTotal]);
   } else {
     lines.push(["Tuition & fees (Fall+Winter)", tuitionTotal]);
   }
@@ -396,61 +589,44 @@ function compute() {
 }
 
 /* -----------------------
-   UI toggles / syncing
+   Living toggles
 ------------------------ */
 function toggleLivingInputs() {
-  const housing = $("housing").value;
+  const housing = cleanText($("housing")?.value);
 
   const ocRoom = $("oncampusRoom");
   const ocRes = $("oncampusRes");
+  const offSel = $("offcampus");
 
-  if (ocRoom && ocRes) {
-    ocRoom.disabled = housing !== "OnCampus";
-    ocRes.disabled = housing !== "OnCampus";
+  const ocRoomWrap = $("onCampusRoomWrap");
+  const ocResWrap = $("onCampusResWrap");
+  const offWrap = $("offCampusWrap");
+
+  const showOnCampus = housing === "OnCampus";
+  const showOffCampus = housing === "OffCampus";
+
+  // Show/hide whole blocks (label + select)
+  if (ocRoomWrap) ocRoomWrap.style.display = showOnCampus ? "block" : "none";
+  if (ocResWrap) ocResWrap.style.display = showOnCampus ? "block" : "none";
+  if (offWrap) offWrap.style.display = showOffCampus ? "block" : "none";
+
+  // Enable/disable selects
+  if (ocRoom) ocRoom.disabled = !showOnCampus;
+  if (ocRes) ocRes.disabled = !showOnCampus;
+  if (offSel) offSel.disabled = !showOffCampus;
+
+  // Optional: reset values when switching to avoid “ghost selections”
+  if (!showOnCampus) {
+    if (ocRoom) ocRoom.selectedIndex = 0;
+    if (ocRes) ocRes.selectedIndex = 0;
   }
-
-  $("offcampus").disabled = housing !== "OffCampus";
+  if (!showOffCampus) {
+    if (offSel) offSel.selectedIndex = 0;
+  }
 
   compute();
 }
 
-function syncProvinceToResidency() {
-  // Undergrad uses Province. Grad does not.
-  const level = getLevel();
-  const residency = $("residency").value;
-
-  if (level === "Graduate") {
-    // Disable province for graduate (not used in data)
-    $("province").disabled = true;
-    return;
-  }
-
-  $("province").disabled = false;
-
-  if (residency === "International") {
-    $("province").value = "INT";
-  } else {
-    if ($("province").value === "INT") $("province").value = "ON";
-  }
-}
-
-function syncUIToLevel() {
-  const level = getLevel();
-
-  // Province only meaningful for undergrad
-  if (level === "Graduate") {
-    $("province").disabled = true;
-    // Don't force province values in graduate mode
-  } else {
-    $("province").disabled = false;
-    syncProvinceToResidency();
-  }
-
-  // Major disabled in grad mode
-  if ($("major")) {
-    $("major").disabled = (level === "Graduate");
-  }
-}
 
 /* -----------------------
    Init
@@ -460,36 +636,76 @@ async function init() {
   DATA = await res.json();
 
   updateLivingDropdowns();
-  syncUIToLevel();
+
+  updateProvinceOptions();
+  setSummerUI();
+  setCreditsUI();
   updateProgramMajor();
 
-  // Events
+  // EVENTS
   if ($("level")) {
     $("level").addEventListener("change", () => {
-      syncUIToLevel();
-      // Rebuild program/major choices based on level
+      updateProvinceOptions();
+      setSummerUI();
+      setCreditsUI();
       updateProgramMajor();
     });
   }
 
-  ["residency", "province", "load", "cohort"].forEach(id =>
-    $(id).addEventListener("change", () => {
-      syncUIToLevel();
-      updateProgramMajor();
-    })
-  );
+  if ($("includeSummer")) {
+    $("includeSummer").addEventListener("change", compute);
+  }
 
-  $("program").addEventListener("change", () => {
-    if (getLevel() === "Graduate") compute();
-    else updateMajors();
-  });
+  if ($("residency")) {
+    $("residency").addEventListener("change", () => {
+      updateProvinceOptions();
+      setSummerUI();
+      setCreditsUI();
+      updateProgramMajor();
+    });
+  }
+
+  if ($("province")) {
+    $("province").addEventListener("change", () => {
+      setCreditsUI();
+      updateProgramMajor();
+    });
+  }
+
+  if ($("load")) {
+    $("load").addEventListener("change", () => {
+      setCreditsUI();
+      updateProgramMajor();
+    });
+  }
+
+  if ($("credits")) {
+    $("credits").addEventListener("change", () => {
+      updateProgramMajor();
+      compute();
+    });
+  }
+
+  if ($("cohort")) {
+    $("cohort").addEventListener("change", () => {
+      setCreditsUI();
+      updateProgramMajor();
+    });
+  }
+
+  if ($("program")) {
+    $("program").addEventListener("change", () => {
+      const f = currentFilters();
+      if (f.Level === "Undergraduate" && isFullTime(f.Load)) updateMajors();
+      else compute();
+    });
+  }
 
   if ($("major")) $("major").addEventListener("change", compute);
 
-  $("housing").addEventListener("change", toggleLivingInputs);
-  // Removed: $("oncampus").addEventListener("change", compute);
-  $("offcampus").addEventListener("change", compute);
-  $("mealplan").addEventListener("change", compute);
+  if ($("housing")) $("housing").addEventListener("change", toggleLivingInputs);
+  if ($("offcampus")) $("offcampus").addEventListener("change", compute);
+  if ($("mealplan")) $("mealplan").addEventListener("change", compute);
 
   toggleLivingInputs();
 }
