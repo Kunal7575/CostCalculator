@@ -565,19 +565,19 @@ function compute() {
   const lines = [];
 
   if (f.Level === "Graduate") {
-    lines.push(["Tuition & fees (Fall)", fall]);
-    lines.push(["Tuition & fees (Winter)", winter]);
-    lines.push(["Tuition & fees (Summer)", includeSummer ? summer : 0]);
-    lines.push(["Tuition & fees (Total)", tuitionTotal]);
+    lines.push(["Tuition & Compulsory fees (Fall)", fall]);
+    lines.push(["Tuition & Compulsory fees (Winter)", winter]);
+    lines.push(["Tuition & Compulsory fees (Summer)", includeSummer ? summer : 0]);
+    lines.push(["Tuition & Compulsory fees (Total)", tuitionTotal]);
   } else if (ugPT) {
-    lines.push([`Tuition & fees (Fall+Winter) - ${cleanText($("credits")?.value)} credits`, tuitionTotal]);
+    lines.push([`Tuition & Compulsory fees (Fall+Winter) - ${cleanText($("credits")?.value)} credits`, tuitionTotal]);
   } else {
-    lines.push(["Tuition & fees (Fall+Winter)", tuitionTotal]);
+    lines.push(["Tuition & Compulsory fees (Fall+Winter)", tuitionTotal]);
   }
 
-  lines.push(["Living (Fall)", livingFall]);
-  lines.push(["Living (Winter)", livingWinter]);
-  lines.push(["Living (Total)", livingYear]);
+  lines.push(["Living Cost (Fall)", livingFall]);
+  lines.push(["Living Cost (Winter)", livingWinter]);
+  lines.push(["Living Cost (Total)", livingYear]);
   lines.push(["Meal plan (Total)", mealYear]);
 
   $("breakdown").innerHTML = lines.map(([label, val]) => `
