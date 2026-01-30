@@ -1,13 +1,14 @@
 /* =======================
-   UofG Cost Calculator - app.js (fixed)
+   UofG Cost Calculator - app.js (fixed + prototype email UI)
 
    Fixes:
-   1) Graduate Part-time now reads from Tuition_Fees_Grad_Part_tim (not Tuition_Fees_Graduate)
+   1) Graduate Part-time reads from Tuition_Fees_Grad_Part_tim (not Tuition_Fees_Graduate)
    2) Load comparisons are normalized everywhere (Part-time vs Part-Time vs part time)
    3) Province dropdown for Graduate:
         - Disabled (as intended)
         - Shows INT when Residency = International
-        - Shows ON when Residency = Domestic
+        - Shows ON/Non-ON when Residency = Domestic (but disabled)
+   4) Prototype-only "Email my estimate" UI logic (localStorage save + validation)
 ======================= */
 
 let DATA = null;
@@ -63,6 +64,13 @@ function setOptions(selectEl, values, placeholder = null) {
   });
 }
 
+function normalizeCohortToken(s) {
+  return cleanText(s)
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
 /* -----------------------
    Province options
    - Undergrad:
@@ -71,7 +79,7 @@ function setOptions(selectEl, values, placeholder = null) {
    - Graduate:
        Province disabled, but display:
          International -> INT
-         Domestic -> ON
+         Domestic -> ON/Non-ON (value kept if already ON/Non-ON else ON)
 ------------------------ */
 function updateProvinceOptions() {
   const level = cleanText($("level")?.value);
@@ -79,23 +87,9 @@ function updateProvinceOptions() {
   const provinceEl = $("province");
   if (!provinceEl) return;
 
-  if (level === "Graduate") {
-    provinceEl.disabled = true;
+  const isInternational = residency === "International";
 
-    if (residency === "International") {
-      setOptions(provinceEl, ["INT"]);
-      provinceEl.value = "INT";
-    } else {
-      setOptions(provinceEl, ["ON"]);
-      provinceEl.value = "ON";
-    }
-    return;
-  }
-
-  // Undergraduate
-  provinceEl.disabled = false;
-
-  if (residency === "International") {
+  if (isInternational) {
     setOptions(provinceEl, ["INT"]);
     provinceEl.value = "INT";
   } else {
@@ -104,6 +98,9 @@ function updateProvinceOptions() {
       provinceEl.value = "ON";
     }
   }
+
+  // disable only for Graduate, but don't skip setting the correct value
+  provinceEl.disabled = (level === "Graduate");
 }
 
 /* -----------------------
@@ -161,12 +158,10 @@ function setCreditsUI() {
       : "";
 
     // Major UI handling
-    if ($("major")) {
-      if (ugPT) {
-        $("major").disabled = true;
-        $("major").innerHTML = `<option value="">N/A for part-time</option>`;
-        $("major").value = "";
-      }
+    if ($("major") && ugPT) {
+      $("major").disabled = true;
+      $("major").innerHTML = `<option value="">N/A for part-time</option>`;
+      $("major").value = "";
     }
   } else {
     wrap.style.display = "none";
@@ -207,12 +202,12 @@ function currentFilters() {
    Tuition sources
 ------------------------ */
 function getUndergradPartTimeRowsRaw() {
-  // In your JSON it's: Tuition_Fees_Undergrad_Part_tim
+  // Your JSON: Tuition_Fees_Undergrad_Part_tim
   return DATA?.Tuition_Fees_Undergrad_Part_tim ?? [];
 }
 
 function getGradPartTimeRowsRaw() {
-  // In your JSON it's: Tuition_Fees_Grad_Part_tim
+  // Your JSON: Tuition_Fees_Grad_Part_tim
   return DATA?.Tuition_Fees_Grad_Part_tim ?? [];
 }
 
@@ -229,7 +224,7 @@ function getTuitionRows() {
       Level: "Graduate",
       Program: cleanText(r.Program),
       Major: "",
-      Credits: cleanText(r.Credits), // present for grad PT, may be blank for grad FT
+      Credits: cleanText(r.Credits), // present for grad PT; may be blank for grad FT
       Residency: cleanText(r.Residency),
       Province: cleanText(r.Province),
       Load: cleanText(r.Load),
@@ -285,36 +280,41 @@ function getFilteredTuitionRows() {
   const f = currentFilters();
   const rows = getTuitionRows();
 
-  // Graduate: Residency + Load + CohortYear (normalized load)
+  // Graduate: Residency + Load + CohortYear (normalized load + cohort)
   if (f.Level === "Graduate") {
     const wantLoad = normalizeLoadToken(f.Load);
+    const wantCohort = normalizeCohortToken(f.CohortYear);
+
     return rows.filter(r =>
       r.Level === "Graduate" &&
       r.Residency === f.Residency &&
       normalizeLoadToken(r.Load) === wantLoad &&
-      r.CohortYear === f.CohortYear
+      normalizeCohortToken(r.CohortYear) === wantCohort
     );
   }
 
   // UG Part-time: Residency + Province + CohortYear + Load token
   if (isPartTime(f.Load)) {
     const wantLoad = "parttime";
+    const wantCohort = normalizeCohortToken(f.CohortYear);
+
     return rows.filter(r =>
       r.Level === "Undergraduate" &&
       r.Residency === f.Residency &&
       r.Province === f.Province &&
-      r.CohortYear === f.CohortYear &&
+      normalizeCohortToken(r.CohortYear) === wantCohort &&
       normalizeLoadToken(r.Load) === wantLoad
     );
   }
 
-  // UG Full-time: Residency + Province + Load + CohortYear
+  // UG Full-time: Residency + Province + Load + CohortYear (normalized cohort)
+  const wantCohort = normalizeCohortToken(f.CohortYear);
   return rows.filter(r =>
     r.Level === "Undergraduate" &&
     r.Residency === f.Residency &&
     r.Province === f.Province &&
     r.Load === f.Load &&
-    r.CohortYear === f.CohortYear
+    normalizeCohortToken(r.CohortYear) === wantCohort
   );
 }
 
@@ -589,7 +589,7 @@ function compute() {
 }
 
 /* -----------------------
-   Living toggles
+   Living toggles (show/hide blocks)
 ------------------------ */
 function toggleLivingInputs() {
   const housing = cleanText($("housing")?.value);
@@ -605,17 +605,14 @@ function toggleLivingInputs() {
   const showOnCampus = housing === "OnCampus";
   const showOffCampus = housing === "OffCampus";
 
-  // Show/hide whole blocks (label + select)
   if (ocRoomWrap) ocRoomWrap.style.display = showOnCampus ? "block" : "none";
   if (ocResWrap) ocResWrap.style.display = showOnCampus ? "block" : "none";
   if (offWrap) offWrap.style.display = showOffCampus ? "block" : "none";
 
-  // Enable/disable selects
   if (ocRoom) ocRoom.disabled = !showOnCampus;
   if (ocRes) ocRes.disabled = !showOnCampus;
   if (offSel) offSel.disabled = !showOffCampus;
 
-  // Optional: reset values when switching to avoid “ghost selections”
   if (!showOnCampus) {
     if (ocRoom) ocRoom.selectedIndex = 0;
     if (ocRes) ocRes.selectedIndex = 0;
@@ -627,6 +624,56 @@ function toggleLivingInputs() {
   compute();
 }
 
+/* -----------------------
+   Prototype-only: Email estimate UI (local only)
+   Requires HTML ids:
+   firstName, email, emailEstimateBtn, clearEmailBtn, emailMsg
+------------------------ */
+function initEmailPrototypeUI() {
+  const emailBtn = $("emailEstimateBtn");
+  const clearBtn = $("clearEmailBtn");
+  const msg = $("emailMsg");
+
+  function isValidEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
+  }
+
+  emailBtn?.addEventListener("click", () => {
+    const firstName = cleanText($("firstName")?.value);
+    const email = cleanText($("email")?.value);
+
+    if (!msg) return;
+
+    if (!firstName || !email || !isValidEmail(email)) {
+      msg.style.display = "block";
+      msg.textContent = "Please enter a valid first name and email address.";
+      return;
+    }
+
+    localStorage.setItem("cc_firstName", firstName);
+    localStorage.setItem("cc_email", email);
+
+    msg.style.display = "block";
+    msg.textContent =
+      `Saved for prototype!! We will email the current estimate to ${email} (delivery connection coming soon).`;
+  });
+
+  clearBtn?.addEventListener("click", () => {
+    if ($("firstName")) $("firstName").value = "";
+    if ($("email")) $("email").value = "";
+    localStorage.removeItem("cc_firstName");
+    localStorage.removeItem("cc_email");
+    if (msg) msg.style.display = "none";
+  });
+
+  // Prefill if saved
+  window.addEventListener("load", () => {
+    const fn = localStorage.getItem("cc_firstName");
+    const em = localStorage.getItem("cc_email");
+    if (fn && $("firstName")) $("firstName").value = fn;
+    if (em && $("email")) $("email").value = em;
+  });
+}
 
 /* -----------------------
    Init
@@ -634,6 +681,9 @@ function toggleLivingInputs() {
 async function init() {
   const res = await fetch("./data.json");
   DATA = await res.json();
+
+  // Optional UI-only feature
+  initEmailPrototypeUI();
 
   updateLivingDropdowns();
 
@@ -652,9 +702,7 @@ async function init() {
     });
   }
 
-  if ($("includeSummer")) {
-    $("includeSummer").addEventListener("change", compute);
-  }
+  if ($("includeSummer")) $("includeSummer").addEventListener("change", compute);
 
   if ($("residency")) {
     $("residency").addEventListener("change", () => {
@@ -674,6 +722,8 @@ async function init() {
 
   if ($("load")) {
     $("load").addEventListener("change", () => {
+      updateProvinceOptions();
+      setSummerUI();
       setCreditsUI();
       updateProgramMajor();
     });
