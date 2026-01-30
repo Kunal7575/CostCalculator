@@ -53,13 +53,13 @@
       color: var(--text);
     }
 
-    /* HEADER (Topbar) - fixed clipping + better image crop */
+    /* HEADER (Topbar) */
     .topbar{
       background:
         linear-gradient(180deg, rgba(15,15,15,0.92), rgba(255,60,60,0.70)),
         url("./background.png");
       background-size: cover;
-      background-position: center 30%; /* controls what part shows */
+      background-position: center 30%;
       background-repeat: no-repeat;
 
       color: #fff;
@@ -69,9 +69,8 @@
       top: 0;
       z-index: 10;
 
-      /* Key fixes */
       padding: 14px 0;
-      min-height: 86px;             /* gives image room so it won't feel “cut” */
+      min-height: 86px;
       display: flex;
       align-items: center;
       overflow: visible;
@@ -182,7 +181,7 @@
       .grid-4 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
       .card .card-desc { text-align: left; }
       .topbar-row{ flex-direction: column; align-items:flex-start; }
-      .topbar{ min-height: 104px; } /* more breathing room on small screens */
+      .topbar{ min-height: 104px; }
     }
     @media (max-width: 560px) {
       .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
@@ -198,7 +197,7 @@
       font-weight: 700;
     }
 
-    select, input[type="checkbox"] {
+    select, input[type="checkbox"]{
       font: inherit;
       accent-color: var(--uog-gold);
     }
@@ -208,7 +207,6 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       background: #fff;
-      transition: box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
     }
 
     select{
@@ -227,6 +225,40 @@
       background: #f3f4f6;
       color: #6b7280;
       cursor: not-allowed;
+    }
+
+    /* NEW: email UI inputs */
+    input{
+      width: 100%;
+      padding: 10px 10px;
+      border: 1px solid rgba(230,231,234,0.9);
+      border-radius: 10px;
+      background: #fff;
+      outline: none;
+    }
+    input:focus{
+      box-shadow: var(--focus);
+      border-color: rgba(240,193,62,0.85);
+    }
+
+    /* NEW: buttons */
+    button{
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--uog-gold);
+      color: #111;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+    button:hover{ filter: brightness(0.98); }
+    button:active{ transform: translateY(1px); }
+
+    .btn-secondary{
+      background: #eef0f3;
+      color: #111;
+      box-shadow: none;
     }
 
     .muted { color: var(--muted); font-size: 12px; line-height: 1.35; }
@@ -278,7 +310,6 @@
       font-weight: 700;
     }
   </style>
-  
 </head>
 
 <body>
@@ -445,7 +476,83 @@
         <table id="breakdown"></table>
       </div>
 
+      <!-- Email estimate (Prototype UI only) -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Email this estimate</h3>
+          <p class="card-desc">Prototype only (delivery will be connected later).</p>
+        </div>
+
+        <div class="muted" style="margin-top:-6px;">
+          If you'd like the estimate emailed to you, enter your name and email address.
+          (For now, this saves your details and shows what will be sent.)
+        </div>
+
+        <div class="grid-2 mt-12">
+          <div class="field">
+            <label for="firstName">First name <span style="color:#c62828">*</span></label>
+            <input id="firstName" type="text" placeholder="e.g., Kunal" />
+          </div>
+
+          <div class="field">
+            <label for="email">Your email address <span style="color:#c62828">*</span></label>
+            <input id="email" type="email" placeholder="e.g., name@domain.com" />
+          </div>
+        </div>
+
+        <div class="mt-12" style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button id="emailEstimateBtn" type="button">Have your estimate emailed to you</button>
+          <button id="clearEmailBtn" type="button" class="btn-secondary">Clear</button>
+        </div>
+
+        <div id="emailMsg" class="section-note" style="display:none; margin-top:12px;"></div>
+      </div>
+
       <script src="./app.js"></script>
+
+      <!-- Prototype-only: validate + show message (no real email) -->
+      <script>
+        const emailBtn = document.getElementById("emailEstimateBtn");
+        const clearBtn = document.getElementById("clearEmailBtn");
+        const msg = document.getElementById("emailMsg");
+
+        function isValidEmail(v){
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
+        }
+
+        emailBtn?.addEventListener("click", () => {
+          const firstName = (document.getElementById("firstName")?.value || "").trim();
+          const email = (document.getElementById("email")?.value || "").trim();
+
+          if (!firstName || !email || !isValidEmail(email)) {
+            msg.style.display = "block";
+            msg.textContent = "Please enter a valid first name and email address.";
+            return;
+          }
+
+          localStorage.setItem("cc_firstName", firstName);
+          localStorage.setItem("cc_email", email);
+
+          msg.style.display = "block";
+          msg.textContent =
+            `Saved for prototype!! We will email the current estimate to ${email} (delivery connection coming soon).`;
+        });
+
+        clearBtn?.addEventListener("click", () => {
+          document.getElementById("firstName").value = "";
+          document.getElementById("email").value = "";
+          localStorage.removeItem("cc_firstName");
+          localStorage.removeItem("cc_email");
+          msg.style.display = "none";
+        });
+
+        window.addEventListener("load", () => {
+          const fn = localStorage.getItem("cc_firstName");
+          const em = localStorage.getItem("cc_email");
+          if (fn) document.getElementById("firstName").value = fn;
+          if (em) document.getElementById("email").value = em;
+        });
+      </script>
     </div>
   </div>
 </body>
