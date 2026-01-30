@@ -655,7 +655,7 @@ function initEmailPrototypeUI() {
 
     msg.style.display = "block";
     msg.textContent =
-      `Saved for prototype!! We will email the current estimate to ${email} (delivery connection coming soon).`;
+      `Saved for prototype!! We will email the current estimate to ${email} (coming soon (Just a prototype😒)).`;
   });
 
   clearBtn?.addEventListener("click", () => {
