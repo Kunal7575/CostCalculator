@@ -4,124 +4,449 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UofG Cost Calculator Prototype</title>
+
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; }
-    label { display:block; font-size: 12px; color:#444; margin-bottom: 4px; }
-    select { min-width: 260px; padding: 8px; }
-    .card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; margin-top: 16px; }
-    .kpi { font-size: 22px; font-weight: 700; }
-    .muted { color:#666; font-size: 12px; }
-    table { width:100%; border-collapse: collapse; margin-top: 12px; }
-    td { padding: 8px; border-bottom: 1px solid #eee; }
-    td:last-child { text-align: right; }
+    :root{
+      --uog-black:#111;
+      --uog-gold:#f0c13e;
+      --bg:#f6f7f9;
+      --card:#fff;
+      --text:#1b1b1b;
+      --muted:#5f6368;
+      --border:#e6e7ea;
+      --shadow: 0 10px 28px rgba(0,0,0,0.07);
+      --radius: 14px;
+      --focus: 0 0 0 3px rgba(240,193,62,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    /* Blurred background image behind everything */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(246,247,249,0.55), rgba(246,247,249,0.78)),
+        url("./background.png");
+      background-size: cover;
+      background-position: center;
+      filter: blur(10px);
+      transform: scale(1.08);
+      z-index: -2;
+    }
+
+    /* Soft vignette */
+    body::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.00), rgba(0,0,0,0.08));
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+    }
+
+    /* HEADER (Topbar) - fixed clipping + better image crop */
+    .topbar{
+      background:
+        linear-gradient(180deg, rgba(15,15,15,0.92), rgba(255,60,60,0.70)),
+        url("./background.png");
+      background-size: cover;
+      background-position: center 30%; /* controls what part shows */
+      background-repeat: no-repeat;
+
+      color: #fff;
+      border-bottom: 4px solid var(--uog-gold);
+
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+      /* Key fixes */
+      padding: 14px 0;
+      min-height: 86px;             /* gives image room so it won't feel “cut” */
+      display: flex;
+      align-items: center;
+      overflow: visible;
+
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+
+    .container {
+      max-width: 1020px;
+      margin: 0 auto;
+      padding: 0 18px;
+      width: 100%;
+    }
+
+    .topbar-row{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img{
+      height: 34px;
+      width: auto;
+      display:block;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    }
+
+    .title{
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      margin: 0;
+      line-height: 1.15;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge{
+      font-size: 11px;
+      font-weight: 700;
+      color: #111;
+      background: var(--uog-gold);
+      padding: 4px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .subtitle{
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      margin-top: 6px;
+      line-height: 1.3;
+    }
+
+    .page { padding: 20px 0 40px; }
+
+    /* Cards */
+    .card{
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(230,231,234,0.9);
+      padding: 18px;
+      border-radius: var(--radius);
+      margin-top: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+
+    .card-header{
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card h3{
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+
+    .card .card-desc{
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+      text-align: right;
+    }
+
+    /* Grid */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 12px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 12px; }
+
+    @media (max-width: 900px) {
+      .grid-3 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+      .grid-4 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+      .card .card-desc { text-align: left; }
+      .topbar-row{ flex-direction: column; align-items:flex-start; }
+      .topbar{ min-height: 104px; } /* more breathing room on small screens */
+    }
+    @media (max-width: 560px) {
+      .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
+      .topbar{ background-position: center 20%; }
+    }
+
+    /* Inputs */
+    label{
+      display:block;
+      font-size: 12px;
+      color:#2b2b2b;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    select, input[type="checkbox"] {
+      font: inherit;
+      accent-color: var(--uog-gold);
+    }
+
+    .field{
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      transition: box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
+    }
+
+    select{
+      width: 100%;
+      padding: 10px 10px;
+      border: 1px solid rgba(230,231,234,0.9);
+      border-radius: 10px;
+      background: #fff;
+      outline: none;
+    }
+    select:focus{
+      box-shadow: var(--focus);
+      border-color: rgba(240,193,62,0.85);
+    }
+    select:disabled{
+      background: #f3f4f6;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    .muted { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .mt-12 { margin-top: 12px; }
+
+    .section-note{
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #fff8e1;
+      border: 1px solid rgba(240,193,62,0.35);
+      color: #6a4b00;
+      font-size: 12px;
+    }
+
+    /* Totals */
+    .totals{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .kpi{
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+    }
+    .kpi-sub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: -6px;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    td{
+      padding: 11px 12px;
+      border-bottom: 1px solid #efeff1;
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: none; }
+    td:last-child{
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
   </style>
+  
 </head>
+
 <body>
-  <h2>UofG Cost Calculator (Prototype)</h2>
-  <p class="muted">Loads data from <code>data.json</code> and calculates totals.</p>
-
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>Upcoming Level of Study</label>
-        <select id="level">
-          <option value="Undergraduate">Undergraduate</option>
-          <option value="Graduate">Graduate</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Domestic or International</label>
-        <select id="residency">
-          <option value="Domestic">Domestic</option>
-          <option value="International">International</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Province</label>
-        <select id="province">
-          <option value="ON">ON</option>
-          <option value="Non-ON">Outside ON</option>
-          <option value="INT">INT</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Load</label>
-        <select id="load">
-          <option value="Full-time">Full-time</option>
-          <option value="Part-time">Part-time</option>
-        </select>
-      </div>
-
-      <div>
-        <label>CohortYear</label>
-        <select id="cohort">
-          <option value="2025-2026">2025-2026</option>
-        </select>
+  <header class="topbar">
+    <div class="container">
+      <div class="topbar-row">
+        <div class="brand">
+          <img src="./logo.png" alt="University of Guelph logo" />
+          <div>
+            <div class="title">
+              University of Guelph • Cost Calculator
+              <span class="badge">Prototype</span>
+            </div>
+            <div class="subtitle">Estimates tuition + selected living + meal plan using data.json</div>
+          </div>
+        </div>
       </div>
     </div>
+  </header>
 
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>Program</label>
-        <select id="program"></select>
+  <div class="page">
+    <div class="container">
+
+      <!-- Tuition + student selections -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Study details</h3>
+          <p class="card-desc">Choose your program details to calculate tuition & fees.</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="field">
+            <label>Upcoming Level of Study</label>
+            <select id="level">
+              <option value="Undergraduate">Undergraduate</option>
+              <option value="Graduate">Graduate</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Domestic or International</label>
+            <select id="residency">
+              <option value="Domestic">Domestic</option>
+              <option value="International">International</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Province</label>
+            <select id="province">
+              <option value="ON">ON</option>
+              <option value="Non-ON">Outside ON</option>
+              <option value="INT">INT</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-3 mt-12">
+          <div class="field">
+            <label>Load</label>
+            <select id="load">
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+            </select>
+          </div>
+
+          <div class="field" id="creditsWrap" style="display:none;">
+            <label>Credits</label>
+            <select id="credits"></select>
+            <div class="muted" id="creditsHint" style="margin-top:6px;"></div>
+          </div>
+
+          <div class="field">
+            <label>CohortYear</label>
+            <select id="cohort">
+              <option value="2025-2026">2025-2026</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2 mt-12">
+          <div class="field">
+            <label>Program</label>
+            <select id="program"></select>
+          </div>
+
+          <div class="field">
+            <label>Major</label>
+            <select id="major"></select>
+          </div>
+        </div>
+
+        <div id="summerWrap" style="display:none; margin-top:12px;">
+          <div class="field" style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="includeSummer" />
+            <div>
+              <div style="font-size:12px; font-weight:800;">Include Summer tuition (Graduate only)</div>
+              <div class="muted">Turn this on only if you're taking summer courses for the selected cohort year.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-note">
+          Major is disabled for Graduate and Undergrad Part-time (program + credits based).
+        </div>
       </div>
 
-      <div>
-        <label>Major</label>
-        <select id="major"></select>
+      <!-- Living -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Living</h3>
+          <p class="card-desc">Add housing and meal plan estimates (optional).</p>
+        </div>
+
+        <div class="grid-4">
+          <div class="field">
+            <label>Housing</label>
+            <select id="housing">
+              <option value="None">None</option>
+              <option value="OnCampus">On-campus</option>
+              <option value="OffCampus">Off-campus</option>
+            </select>
+          </div>
+
+          <div class="field" id="onCampusRoomWrap">
+            <label>Room type (On-campus)</label>
+            <select id="oncampusRoom" disabled></select>
+          </div>
+
+          <div class="field" id="onCampusResWrap">
+            <label>Residence (On-campus)</label>
+            <select id="oncampusRes" disabled></select>
+          </div>
+
+          <div class="field" id="offCampusWrap">
+            <label>Off-campus option</label>
+            <select id="offcampus" disabled></select>
+          </div>
+        </div>
+
+        <div class="grid-2 mt-12">
+          <div class="field">
+            <label>Meal plan</label>
+            <select id="mealplan">
+              <option value="None">None</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
       </div>
+
+      <!-- Totals -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Total estimate</h3>
+          <p class="card-desc">Your total updates automatically as you change selections.</p>
+        </div>
+
+        <div class="totals">
+          <div class="kpi" id="grandTotal">$0.00</div>
+          <div class="kpi-sub">Estimated total (tuition + selected living + selected meal plan)</div>
+        </div>
+
+        <table id="breakdown"></table>
+      </div>
+
+      <script src="./app.js"></script>
     </div>
   </div>
-
-  <div class="card">
-    <h3>Living</h3>
-    <div class="row">
-      <div>
-        <label>Housing</label>
-        <select id="housing">
-          <option value="None">None</option>
-          <option value="OnCampus">On-campus</option>
-          <option value="OffCampus">Off-campus</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Room type (On-campus)</label>
-        <select id="oncampusRoom" disabled></select>
-      </div>
-
-      <div>
-        <label>Residence (On-campus)</label>
-        <select id="oncampusRes" disabled></select>
-      </div>
-
-      <div>
-        <label>Off-campus option</label>
-        <select id="offcampus" disabled></select>
-      </div>
-    </div>
-
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>Meal plan</label>
-        <select id="mealplan">
-          <option value="None">None</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="kpi" id="grandTotal">$0.00</div>
-    <div class="muted">Estimated total (tuition + selected living + selected meal plan)</div>
-
-    <table id="breakdown"></table>
-  </div>
-
-  <script src="./app.js"></script>
 </body>
 </html>
