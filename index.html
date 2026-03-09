@@ -5,74 +5,85 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>UofG Cost Calculator Prototype</title>
 
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@uoguelph/web-components@2.x.x/dist/uofg-web-components/uofg-web-components.css"
+  />
+
   <style>
-    /* Gold primary button */
-/* Gold primary button */
-.btn-gold {
-  position: relative;
-  overflow: hidden;
-  background: #f4c430; /* UofG gold */
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
-  font-weight: 700; /* match Clear */
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
+    :root {
+      --uog-color-black: #000;
+      --uog-color-black-focus: #444;
+      --uog-color-black-on-light: #000;
+      --uog-color-black-contrast: #fff;
 
-/* sliding grey layer (same vibe as Clear) */
-.btn-gold::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: #f1f3f5; /* soft grey like Clear */
-  transition: left 0.35s ease;
-  z-index: 0;
-}
+      --uog-color-white: #fff;
+      --uog-color-white-contrast: #000;
 
-/* hover slide */
-.btn-gold:hover::before {
-  left: 0;
-}
+      --uog-color-red: #e51937;
+      --uog-color-red-focus: #b3142c;
+      --uog-color-red-on-light: #dc1836;
+      --uog-color-red-contrast: #fff;
 
-/* keep text above slide */
-.btn-gold span {
-  position: relative;
-  z-index: 1;
-}
+      --uog-color-yellow: #ffc429;
+      --uog-color-yellow-focus: #ffe299;
+      --uog-color-yellow-on-dark: #ffc429;
+      --uog-color-yellow-contrast: #000;
 
-/* optional: subtle hover text darkening */
-.btn-gold:hover {
-  color: #000;
-}
+      --uog-color-blue: #187bb4;
+      --uog-color-blue-focus: #135f8b;
+      --uog-color-blue-on-light: #1775ab;
+      --uog-color-blue-contrast: #fff;
 
+      --uog-color-green: #318738;
+      --uog-color-green-focus: #27682c;
+      --uog-color-green-on-light: #2e7f35;
+      --uog-color-green-contrast: #fff;
 
-    :root{
-      --uog-black:#111;
-      --uog-gold:#f0c13e;
-      --bg:#f6f7f9;
-      --card:#fff;
-      --text:#1b1b1b;
-      --muted:#5f6368;
-      --border:#e6e7ea;
-      --shadow: 0 10px 28px rgba(0,0,0,0.07);
+      --uog-color-grey-light-focus: #bfbfbf;
+      --uog-color-grey-light-bg: #f5f5f5;
+      --uog-color-grey-light-contrast: #000;
+
+      --uog-color-grey-dark-bg: #222;
+      --uog-color-grey-dark-contrast: #fff;
+
+      --uog-color-body-copy: #555;
+      --uog-color-body-copy-on-dark: #ccc;
+      --uog-color-body-copy-on-light: #555;
+
+      --uog-color-body-copy-bold: #333;
+      --uog-color-body-copy-bold-on-dark: #e2e2e2;
+      --uog-color-body-copy-bold-on-light: #333;
+
+      --uog-color-body-copy-link: #187bb4;
+      --uog-color-body-copy-link-on-dark: #1d93d7;
+      --uog-color-body-copy-link-on-light: #166ea2;
+
+      --bg: var(--uog-color-grey-light-bg);
+      --card: var(--uog-color-white);
+      --text: var(--uog-color-body-copy);
+      --text-bold: var(--uog-color-body-copy-bold);
+      --muted: var(--uog-color-body-copy);
+      --border: var(--uog-color-grey-light-focus);
+      --focus-color: var(--uog-color-yellow-focus);
       --radius: 14px;
-      --focus: 0 0 0 3px rgba(240,193,62,0.35);
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
     }
 
     * { box-sizing: border-box; }
     html, body { height: 100%; }
 
-    body::before{
-      content:"";
+    uofg-header,
+    uofg-footer {
+      display: block;
+    }
+
+    body::before {
+      content: "";
       position: fixed;
       inset: 0;
       background:
-        linear-gradient(180deg, rgba(246,247,249,0.55), rgba(246,247,249,0.78)),
+        linear-gradient(180deg, rgba(245, 245, 245, 0.82), rgba(245, 245, 245, 0.93)),
         url("./background.png");
       background-size: cover;
       background-position: center;
@@ -81,11 +92,11 @@
       z-index: -2;
     }
 
-    body::after{
-      content:"";
+    body::after {
+      content: "";
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle at center, rgba(0,0,0,0.00), rgba(0,0,0,0.08));
+      background: radial-gradient(circle at center, rgba(0,0,0,0), rgba(0,0,0,0.06));
       z-index: -1;
       pointer-events: none;
     }
@@ -94,29 +105,7 @@
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       color: var(--text);
-    }
-
-    .topbar{
-      background:
-        linear-gradient(180deg, rgba(15,15,15,0.92), rgba(255,60,60,0.70)),
-        url("./background.png");
-      background-size: cover;
-      background-position: center 30%;
-      background-repeat: no-repeat;
-
-      color: #fff;
-      border-bottom: 4px solid var(--uog-gold);
-
-      position: sticky;
-      top: 0;
-      z-index: 10;
-
-      padding: 14px 0;
-      min-height: 86px;
-      display: flex;
-      align-items: center;
-
-      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      background: var(--bg);
     }
 
     .container {
@@ -126,62 +115,13 @@
       width: 100%;
     }
 
-    .topbar-row{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 16px;
-      width: 100%;
+    .page {
+      padding: 32px 0 40px;
     }
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand img{
-      height: 34px;
-      width: auto;
-      display:block;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
-    }
-
-    .title{
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      margin: 0;
-      line-height: 1.15;
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .badge{
-      font-size: 11px;
-      font-weight: 700;
-      color: #111;
-      background: var(--uog-gold);
-      padding: 4px 8px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-
-    .subtitle{
-      font-size: 12px;
-      color: rgba(255,255,255,0.85);
-      margin-top: 6px;
-      line-height: 1.3;
-    }
-
-    .page { padding: 20px 0 40px; }
-
-    .card{
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(230,231,234,0.9);
+    .card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--border);
       padding: 18px;
       border-radius: var(--radius);
       margin-top: 14px;
@@ -189,7 +129,7 @@
       backdrop-filter: blur(6px);
     }
 
-    .card-header{
+    .card-header {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
@@ -197,13 +137,14 @@
       margin-bottom: 10px;
     }
 
-    .card h3{
+    .card h3 {
       margin: 0;
       font-size: 16px;
       letter-spacing: 0.2px;
+      color: var(--text-bold);
     }
 
-    .card .card-desc{
+    .card .card-desc {
       margin: 0;
       font-size: 12px;
       color: var(--muted);
@@ -219,178 +160,348 @@
       .grid-3 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
       .grid-4 { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
       .card .card-desc { text-align: left; }
-      .topbar-row{ flex-direction: column; align-items:flex-start; }
-      .topbar{ min-height: 104px; }
-    }
-    @media (max-width: 560px) {
-      .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
-      .topbar{ background-position: center 20%; }
     }
 
-    label{
-      display:block;
+    @media (max-width: 560px) {
+      .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
+      .page { padding: 24px 0 36px; }
+    }
+
+    label {
+      display: block;
       font-size: 12px;
-      color:#2b2b2b;
+      color: var(--text-bold);
       margin-bottom: 6px;
       font-weight: 700;
     }
 
-    select, input[type="checkbox"]{
+    select,
+    input[type="checkbox"] {
       font: inherit;
-      accent-color: var(--uog-gold);
+      accent-color: var(--uog-color-yellow);
     }
 
-    .field{
+    .field {
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: 12px;
-      background: #fff;
+      background: var(--card);
     }
 
-    select{
+    select {
       width: 100%;
       padding: 10px 10px;
-      border: 1px solid rgba(230,231,234,0.9);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #fff;
+      background: var(--uog-color-white);
       outline: none;
+      color: var(--text-bold);
     }
-    select:focus{
-      box-shadow: var(--focus);
-      border-color: rgba(255, 215, 0, 1);
+
+    select:focus,
+    select:focus-visible,
+    input:focus,
+    input:focus-visible,
+    button:focus,
+    button:focus-visible,
+    .info-btn:focus,
+    .info-btn:focus-visible,
+    .scroll-top-btn:focus,
+    .scroll-top-btn:focus-visible {
+      outline: 3px solid var(--focus-color);
+      outline-offset: 2px;
+      box-shadow: none;
     }
-    select:disabled{
-      background: #f3f4f6;
-      color: #6b7280;
+
+    select:disabled {
+      background: var(--uog-color-grey-light-bg);
+      color: var(--uog-color-body-copy);
       cursor: not-allowed;
     }
 
-    input{
+    input {
       width: 100%;
       padding: 10px 10px;
-      border: 1px solid rgba(230, 231, 234, 0.692);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #ffffffc4;
+      background: var(--uog-color-white);
       outline: none;
-    }
-    input:focus{
-      box-shadow: var(--focus);
-      border-color: rgba(255, 215, 0, 1);
+      color: var(--text-bold);
     }
 
-    button{
+    button {
       border: none;
       border-radius: 12px;
       padding: 10px 14px;
       font-weight: 800;
       cursor: pointer;
-      background: var(--uog-gold);
-      color: #111;
+      background: var(--uog-color-yellow);
+      color: var(--uog-color-yellow-contrast);
       box-shadow: 0 6px 16px rgba(0,0,0,0.12);
     }
-    button:hover{ filter: brightness(0.98); }
-    button:active{ transform: translateY(1px); }
 
-    .btn-secondary{
-      background: #eef0f3;
-      color: #111;
-      box-shadow: none;
+    button:hover { filter: brightness(0.98); }
+    button:active { transform: translateY(1px); }
+
+    .btn-gold {
+      position: relative;
+      overflow: hidden;
+      background: var(--uog-color-yellow);
+      color: var(--uog-color-yellow-contrast);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.3s ease;
     }
 
-    .muted { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .btn-gold::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--uog-color-grey-light-bg);
+      transition: left 0.35s ease;
+      z-index: 0;
+    }
+
+    .btn-gold:hover::before { left: 0; }
+    .btn-gold span { position: relative; z-index: 1; }
+    .btn-gold:hover { color: var(--uog-color-yellow-contrast); }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     .mt-12 { margin-top: 12px; }
 
-    .section-note{
+    .section-note {
       margin-top: 12px;
       padding: 10px 12px;
       border-radius: 12px;
-      background: #fff8e1;
-      border: 1px solid rgba(240,193,62,0.35);
-      color: #6a4b00;
+      background: var(--uog-color-grey-light-bg);
+      border: 1px solid var(--uog-color-yellow);
+      color: var(--uog-color-body-copy);
       font-size: 12px;
     }
 
-    .totals{
+    .totals {
       display: grid;
       grid-template-columns: 1fr;
       gap: 10px;
     }
-    .kpi{
+
+    .kpi {
       font-size: 30px;
       font-weight: 900;
       letter-spacing: 0.2px;
+      color: var(--text-bold);
     }
-    .kpi-sub{
+
+    .kpi-sub {
       font-size: 12px;
       color: var(--muted);
       margin-top: -6px;
     }
 
-    table{
-      width:100%;
+    .total-highlight {
+      background: var(--uog-color-grey-light-bg);
+      border: 1px solid var(--uog-color-yellow);
+      padding: 14px;
+      border-radius: 12px;
+    }
+
+    .total-divider {
+      margin: 16px 0 6px;
+      border-top: 2px solid var(--border);
+    }
+
+    table {
+      width: 100%;
       border-collapse: collapse;
       margin-top: 12px;
       overflow: hidden;
       border-radius: 12px;
     }
-    td{
+
+    td {
       padding: 11px 12px;
-      border-bottom: 1px solid #efeff1;
+      border-bottom: 1px solid var(--uog-color-grey-light-focus);
       font-size: 13px;
+      color: var(--text);
     }
+
     tr:last-child td { border-bottom: none; }
-    td:last-child{
+
+    td:last-child {
       text-align: right;
       font-variant-numeric: tabular-nums;
       font-weight: 700;
-    }
-    /* Summer checkbox row */
-    .check-row{
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      margin:0;
-      cursor:pointer;
-    }
-    .check-row input[type="checkbox"]{
-      width:auto;
-      margin-top:3px;
-      flex:0 0 auto;
+      color: var(--text-bold);
     }
 
+    .estimate-actions {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 16px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .check-row input[type="checkbox"] {
+      width: auto;
+      margin-top: 3px;
+      flex: 0 0 auto;
+    }
+
+    .fee-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-btn {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-bold);
+      opacity: 0.75;
+      box-shadow: none;
+    }
+
+    .info-btn:hover { opacity: 1; }
+
+    .info-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tooltip {
+      position: fixed;
+      max-width: 320px;
+      background: var(--uog-color-white);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--uog-color-body-copy-bold);
+      z-index: 9999;
+    }
+
+    .tooltip .tooltip-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: var(--text-bold);
+    }
+
+    .tooltip .tooltip-body {
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .uofg-back-to-top {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 999;
+      display: flex;
+      width: 48px;
+      aspect-ratio: 1 / 1;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid var(--uog-color-white);
+      background: var(--uog-color-black);
+      color: var(--uog-color-white);
+      padding: 8px;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+    }
+
+    .uofg-back-to-top:hover {
+      background: var(--uog-color-red);
+      color: var(--uog-color-red-contrast);
+      transform: translateY(-2px);
+    }
+
+    .uofg-back-to-top.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .uofg-back-to-top svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    @media (max-width: 560px) {
+      .uofg-back-to-top {
+        right: 14px;
+        bottom: 18px;
+        width: 44px;
+        padding: 7px;
+      }
+
+      .uofg-back-to-top svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="container">
-      <div class="topbar-row">
-        <div class="brand">
-          <img src="./logo.png" alt="University of Guelph logo" />
-          <div>
-            <div class="title">
-              University of Guelph • Cost Calculator
-              <span class="badge">Prototype</span>
-            </div>
-            <div class="subtitle">Estimates tuition + selected living + meal plan using data.json</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
+  <uofg-header
+    page-title="Cost Calculator"
+    page-url="/"
+  ></uofg-header>
 
   <div class="page">
     <div class="container">
 
       <div class="card">
         <div class="card-header">
-          <h3>Study details</h3>
-          <p class="card-desc">Choose your program details to calculate tuition & fees.</p>
+          <h3>Tuition filters</h3>
+          <p class="card-desc">Pick what applies and tuition updates instantly.</p>
         </div>
 
         <div class="grid-3">
           <div class="field">
-            <label>Upcoming Level of Study</label>
+            <label for="level">Level of study</label>
             <select id="level">
               <option value="Undergraduate">Undergraduate</option>
               <option value="Graduate">Graduate</option>
@@ -398,7 +509,7 @@
           </div>
 
           <div class="field">
-            <label>Domestic or International</label>
+            <label for="residency">Residency</label>
             <select id="residency">
               <option value="Domestic">Domestic</option>
               <option value="International">International</option>
@@ -406,7 +517,7 @@
           </div>
 
           <div class="field">
-            <label>Province</label>
+            <label for="province">Province</label>
             <select id="province">
               <option value="ON">ON</option>
               <option value="Non-ON">Outside ON</option>
@@ -417,55 +528,38 @@
 
         <div class="grid-3 mt-12">
           <div class="field">
-            <label>Load</label>
+            <label for="load">Load</label>
             <select id="load">
               <option value="Full-time">Full-time</option>
               <option value="Part-time">Part-time</option>
             </select>
           </div>
 
-          <div class="field" id="creditsWrap" style="display:none;">
-            <label>Credits</label>
-            <select id="credits"></select>
-            <div class="muted" id="creditsHint" style="margin-top:6px;"></div>
+          <div class="field">
+            <label for="cohort">Cohort year</label>
+            <select id="cohort"></select>
           </div>
 
           <div class="field">
-            <label>CohortYear</label>
-            <select id="cohort">
-              <option value="2025-2026">2025-2026</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid-2 mt-12">
-          <div class="field">
-            <label>Program</label>
+            <label for="program">Program</label>
             <select id="program"></select>
           </div>
+        </div>
 
+        <div id="summerWrap" style="display:none; margin-top:12px;">
           <div class="field">
-            <label>Major</label>
-            <select id="major"></select>
+            <label class="check-row" for="includeSummer">
+              <input type="checkbox" id="includeSummer" />
+              <div>
+                <div style="font-size:12px; font-weight:800; color: var(--text-bold);">Include Summer tuition</div>
+                <div class="muted">Only turn on if Summer is relevant for your selection.</div>
+              </div>
+            </label>
           </div>
         </div>
 
-        <!-- FIXED Summer UI -->
-        <div id="summerWrap" style="display:none; margin-top:12px;">
-        <div class="field">
-          <label class="check-row">
-            <input type="checkbox" id="includeSummer" />
-            <div>
-              <div style="font-size:12px; font-weight:800;">Include Summer tuition (Graduate only)</div>
-              <div class="muted">Turn this on only if you're taking summer courses for the selected cohort year.</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-
         <div class="section-note">
-          Major is disabled for Graduate and Undergrad Part-time (program + credits based).
+          Credits and Major are removed. We match tuition using Level, Residency, Province, Load, CohortYear, Program.
         </div>
       </div>
 
@@ -477,7 +571,7 @@
 
         <div class="grid-4">
           <div class="field">
-            <label>Housing</label>
+            <label for="housing">Housing</label>
             <select id="housing">
               <option value="None">None</option>
               <option value="OnCampus">On-campus</option>
@@ -486,24 +580,24 @@
           </div>
 
           <div class="field" id="onCampusRoomWrap">
-            <label>Room type (On-campus)</label>
+            <label for="oncampusRoom">Room type (On-campus)</label>
             <select id="oncampusRoom" disabled></select>
           </div>
 
           <div class="field" id="onCampusResWrap">
-            <label>Residence (On-campus)</label>
+            <label for="oncampusRes">Residence (On-campus)</label>
             <select id="oncampusRes" disabled></select>
           </div>
 
           <div class="field" id="offCampusWrap">
-            <label>Off-campus option</label>
+            <label for="offcampus">Off-campus option</label>
             <select id="offcampus" disabled></select>
           </div>
         </div>
 
         <div class="grid-2 mt-12">
           <div class="field">
-            <label>Meal plan</label>
+            <label for="mealplan">Meal plan</label>
             <select id="mealplan">
               <option value="None">None</option>
             </select>
@@ -518,52 +612,42 @@
           <p class="card-desc">Your total updates automatically as you change selections.</p>
         </div>
 
-        <div class="totals">
-          <div class="kpi" id="grandTotal">$0.00</div>
-          <div class="kpi-sub">Estimated total (tuition + selected living + selected meal plan)</div>
+        <div class="total-highlight">
+          <div class="totals">
+            <div class="kpi" id="grandTotal">$0.00</div>
+            <div class="kpi-sub">Estimated total (tuition + selected living + selected meal plan)</div>
+          </div>
         </div>
 
+        <div class="total-divider"></div>
         <table id="breakdown"></table>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>Email this estimate</h3>
-          <p class="card-desc">Prototype only (delivery will be connected later).</p>
-        </div>
-
-        <div class="muted" style="margin-top:-6px;">
-          If you'd like the estimate emailed to you, enter your name and email address.
-          (For now, this saves your details and shows what will be sent.)
-        </div>
-
-        <div class="grid-2 mt-12">
-          <div class="field">
-            <label for="firstName">First name <span style="color:#c62828">*</span></label>
-            <input id="firstName" type="text" placeholder="e.g., Kunal" />
-          </div>
-
-          <div class="field">
-            <label for="email">Your email address <span style="color:#c62828">*</span></label>
-            <input id="email" type="email" placeholder="e.g., name@domain.com" />
-          </div>
-        </div>
-
-        <div class="mt-12" style="display:flex; gap:12px; flex-wrap:wrap;">
-          <button id="emailEstimateBtn" class="btn-gold" type="button">
-            <span>Have your estimate emailed to you</span>
+        <div class="estimate-actions">
+          <button id="downloadEstimateBtn" class="btn-gold" type="button">
+            <span>Download your estimate (PDF)</span>
           </button>
-
-          <button id="clearEmailBtn" type="button" class="btn-secondary">Clear</button>
         </div>
-
-        <div id="emailMsg" class="section-note" style="display:none; margin-top:12px;"></div>
       </div>
-
-      <!-- Keep only app.js (email logic is already inside app.js) -->
-      <script src="./app.js"></script>
 
     </div>
   </div>
+
+  <uofg-footer></uofg-footer>
+
+  <button id="scrollTopBtn" class="uofg-back-to-top" type="button" aria-label="Back to top">
+    <span class="sr-only">Back to top</span>
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 512 512">
+      <path fill="currentColor" d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z"></path>
+    </svg>
+  </button>
+
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/npm/@uoguelph/web-components@2.x.x/dist/uofg-web-components/uofg-web-components.esm.js"
+  ></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
