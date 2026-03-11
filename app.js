@@ -208,7 +208,11 @@ function updateCohortOptions() {
       })
       .map(r => cleanText(getCol(r, ["CohortYear", "Cohort Year", "Cohort"])))
       .filter(Boolean)
-  ).sort();
+  ).sort((a, b) => {
+    const aEnd = parseInt(String(a).split("-")[1], 10) || 0;
+    const bEnd = parseInt(String(b).split("-")[1], 10) || 0;
+    return bEnd - aEnd;
+  });
 
   const prev = cleanText(cohortEl.value);
   setOptions(cohortEl, cohorts, cohorts.length ? null : "No cohorts found");
