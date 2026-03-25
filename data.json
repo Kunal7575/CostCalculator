@@ -20752,147 +20752,12 @@
     "On_campus_Living_Costs": [
         {
             "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "East Residences",
-            "Deposit": "750",
-            "Fall Term": "4633",
-            "Winter Term": "3883",
-            "Cost": "9266"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Gordon Hall ",
-            "Deposit": "750",
-            "Fall Term": "4946",
-            "Winter Term": "4196",
-            "Cost": "9892"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Johnston Hall    ",
-            "Deposit": "750",
-            "Fall Term": "4365",
-            "Winter Term": "3615",
-            "Cost": "8730"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Lambton Suite",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Lennox & Addington",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Maids Halls ",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Mills",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "North Residence",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
+            "RoomType": "Small Single Room",
             "ResidenceArea": "South Residence",
             "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "Watson",
-            "Deposit": "750",
-            "Fall Term": "4290",
-            "Winter Term": "3540",
-            "Cost": "8580"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Double Room",
-            "ResidenceArea": "West Village ",
-            "Deposit": "750",
-            "Fall Term": "5015",
-            "Winter Term": "4265",
-            "Cost": "10030"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "One-person Apartment",
-            "ResidenceArea": "North Residence",
-            "Deposit": "750",
-            "Fall Term": "5215",
-            "Winter Term": "4465",
-            "Cost": "10430"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "One-person Apartment",
-            "ResidenceArea": "South Residence",
-            "Deposit": "750",
-            "Fall Term": "5215",
-            "Winter Term": "4465",
-            "Cost": "10430"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "One-person Apartment",
-            "ResidenceArea": "West Village ",
-            "Deposit": "750",
-            "Fall Term": "5598",
-            "Winter Term": "4848",
-            "Cost": "11196"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Quad Room",
-            "ResidenceArea": "North Residence",
-            "Deposit": "750",
-            "Fall Term": "4037",
-            "Winter Term": "3287",
-            "Cost": "8074"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Quad Room",
-            "ResidenceArea": "South Residence",
-            "Deposit": "750",
-            "Fall Term": "4037",
-            "Winter Term": "3287",
-            "Cost": "8074"
+            "Fall Term": "4300",
+            "Winter Term": "3550",
+            "Cost": "8600"
         },
         {
             "LivingType": "OnCampus",
@@ -20995,12 +20860,156 @@
         },
         {
             "LivingType": "OnCampus",
-            "RoomType": "Small Single Room",
+            "RoomType": "One-person Apartment",
+            "ResidenceArea": "North Residence",
+            "Deposit": "750",
+            "Fall Term": "5215",
+            "Winter Term": "4465",
+            "Cost": "10430"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "One-person Apartment",
             "ResidenceArea": "South Residence",
             "Deposit": "750",
-            "Fall Term": "4300",
-            "Winter Term": "3550",
-            "Cost": "8600"
+            "Fall Term": "5215",
+            "Winter Term": "4465",
+            "Cost": "10430"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "One-person Apartment",
+            "ResidenceArea": "West Village ",
+            "Deposit": "750",
+            "Fall Term": "5598",
+            "Winter Term": "4848",
+            "Cost": "11196"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Two-bedroom Apartment",
+            "ResidenceArea": "North Residence",
+            "Deposit": "750",
+            "Fall Term": "5215",
+            "Winter Term": "4465",
+            "Cost": "10430"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Two-bedroom Apartment",
+            "ResidenceArea": "South Residence",
+            "Deposit": "750",
+            "Fall Term": "5215",
+            "Winter Term": "4465",
+            "Cost": "10430"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Two-bedroom Apartment",
+            "ResidenceArea": "West Village ",
+            "Deposit": "750",
+            "Fall Term": "5215",
+            "Winter Term": "4465",
+            "Cost": "10430"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "East Residences",
+            "Deposit": "750",
+            "Fall Term": "4633",
+            "Winter Term": "3883",
+            "Cost": "9266"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Gordon Hall ",
+            "Deposit": "750",
+            "Fall Term": "4946",
+            "Winter Term": "4196",
+            "Cost": "9892"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Johnston Hall    ",
+            "Deposit": "750",
+            "Fall Term": "4365",
+            "Winter Term": "3615",
+            "Cost": "8730"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Lambton Suite",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Lennox & Addington",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Maids Halls ",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Mills",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "North Residence",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "South Residence",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "Watson",
+            "Deposit": "750",
+            "Fall Term": "4290",
+            "Winter Term": "3540",
+            "Cost": "8580"
+        },
+        {
+            "LivingType": "OnCampus",
+            "RoomType": "Double Room",
+            "ResidenceArea": "West Village ",
+            "Deposit": "750",
+            "Fall Term": "5015",
+            "Winter Term": "4265",
+            "Cost": "10030"
         },
         {
             "LivingType": "OnCampus",
@@ -21049,30 +21058,21 @@
         },
         {
             "LivingType": "OnCampus",
-            "RoomType": "Two-bedroom Apartment",
+            "RoomType": "Quad Room",
             "ResidenceArea": "North Residence",
             "Deposit": "750",
-            "Fall Term": "5215",
-            "Winter Term": "4465",
-            "Cost": "10430"
+            "Fall Term": "4037",
+            "Winter Term": "3287",
+            "Cost": "8074"
         },
         {
             "LivingType": "OnCampus",
-            "RoomType": "Two-bedroom Apartment",
+            "RoomType": "Quad Room",
             "ResidenceArea": "South Residence",
             "Deposit": "750",
-            "Fall Term": "5215",
-            "Winter Term": "4465",
-            "Cost": "10430"
-        },
-        {
-            "LivingType": "OnCampus",
-            "RoomType": "Two-bedroom Apartment",
-            "ResidenceArea": "West Village ",
-            "Deposit": "750",
-            "Fall Term": "5215",
-            "Winter Term": "4465",
-            "Cost": "10430"
+            "Fall Term": "4037",
+            "Winter Term": "3287",
+            "Cost": "8074"
         }
     ]
 }
