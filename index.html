@@ -174,18 +174,22 @@
       pointer-events: none;
     }
 
+    /* ===== WIDER CONTAINER TO MATCH SMART PLANNER ===== */
     .container {
       position: relative;
       z-index: 1;
-      max-width: 1020px;
+      max-width: 1400px;
       width: 100%;
       margin: 0 auto;
-      padding: 0 18px;
+      padding: 0 24px 32px;
     }
+    /* ================================================= */
 
+    /* ===== MATCH SMART PLANNER TOP SPACING ===== */
     .page {
-      padding: 44px 0 40px;
+      padding: 36px 0 0;
     }
+    /* ========================================= */
 
     .page-title {
       margin: 0 0 18px;
@@ -197,6 +201,10 @@
       letter-spacing: -0.02em;
     }
 
+    /* Optional inner shell to keep form width comfortable if needed.
+       Not required, but you can wrap calculator sections with .page-shell later if desired.
+       Currently not applied to keep consistent with wider layout request.
+    */
     .card {
       margin-top: 14px;
       padding: 18px;
@@ -271,7 +279,7 @@
       }
 
       .page {
-        padding: 24px 0 36px;
+        padding: 24px 0 0;
       }
 
       .page-title {
@@ -666,7 +674,6 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <div id="sr-tooltip-announcer" class="sr-only" aria-live="polite"></div>
-  <!-- <uofg-header></uofg-header> -->
   <uofg-header
     page-title="Student Planning Tools"
     page-url="#example"
@@ -677,23 +684,6 @@
     <a href="https://smart-eating-planner.netlify.app/">
       Eating Plan
     </a>
-    <!-- <ul data-title="Example Menu">
-      <li>
-        <a href="#example">
-          Example Menu Link 1
-        </a>
-      </li>
-      <li>
-        <a href="#example">
-          This is a really long Example Menu Link 2
-        </a>
-      </li>
-      <li>
-        <a href="#example">
-          Example Menu Link 3
-        </a>
-      </li>
-    </ul> -->
   </uofg-header>
 
   <main class="site-main" id="main-content">
@@ -849,19 +839,19 @@
           <table id="breakdown" aria-label="Estimate breakdown">
             <tbody>
               <tr>
-                <th scope="row">Tuition &amp; Compulsory fees (Fall)</th>
+                <th scope="row">Tuition & Compulsory fees (Fall)</th>
                 <td>$0.00</td>
               </tr>
               <tr>
-                <th scope="row">Tuition &amp; Compulsory fees (Winter)</th>
+                <th scope="row">Tuition & Compulsory fees (Winter)</th>
                 <td>$0.00</td>
               </tr>
               <tr>
-                <th scope="row">Tuition &amp; Compulsory fees (Summer)</th>
+                <th scope="row">Tuition & Compulsory fees (Summer)</th>
                 <td>$0.00</td>
               </tr>
               <tr>
-                <th scope="row">Tuition &amp; Compulsory fees (Total)</th>
+                <th scope="row">Tuition & Compulsory fees (Total)</th>
                 <td>$0.00</td>
               </tr>
               <tr>
