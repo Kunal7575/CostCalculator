@@ -433,18 +433,13 @@ function updateProvinceOptions() {
   const isInternational = residency === "International";
 
   if (isInternational) {
-    provinceEl.innerHTML = `
-      <option value="INT">International</option>
-    `;
+    setOptions(provinceEl, ["INT"]);
     provinceEl.value = "INT";
     setDisabledState(provinceEl, true);
     return;
   }
 
-  provinceEl.innerHTML = `
-    <option value="ON">Ontario</option>
-    <option value="Non-ON">Non-Ontario</option>
-  `;
+  setOptions(provinceEl, ["ON", "Non-ON"]);
   provinceEl.value = (previousValue === "ON" || previousValue === "Non-ON") ? previousValue : "ON";
   setDisabledState(provinceEl, false);
 }
@@ -491,11 +486,12 @@ function updateCohortOptions() {
     return bEnd - aEnd;
   });
 
+  const latestCohort = cohorts.length ? [cohorts[0]] : [];
   const prev = cleanText(cohortEl.value);
-  setOptions(cohortEl, cohorts, cohorts.length ? null : "No cohorts found");
+  setOptions(cohortEl, latestCohort, latestCohort.length ? null : "No cohorts found");
 
-  if (prev && cohorts.includes(prev)) cohortEl.value = prev;
-  else if (cohorts.length) cohortEl.value = cohorts[0];
+  if (prev && latestCohort.includes(prev)) cohortEl.value = prev;
+  else if (latestCohort.length) cohortEl.value = latestCohort[0];
   else cohortEl.value = "";
 }
 
@@ -609,16 +605,10 @@ function closeTooltip() {
   if (activeTooltipButton) {
     activeTooltipButton.setAttribute("aria-expanded", "false");
     activeTooltipButton.removeAttribute("aria-describedby");
-    activeTooltipButton.removeAttribute("aria-controls");
   }
 
   if (activeTooltip) {
     activeTooltip.remove();
-  }
-
-  const announcer = $("sr-tooltip-announcer");
-  if (announcer) {
-    announcer.textContent = "";
   }
 
   activeTooltip = null;
@@ -635,11 +625,6 @@ function showTooltip(anchorEl, title, body) {
 
   closeTooltip();
 
-  const announcer = $("sr-tooltip-announcer");
-  if (announcer) {
-    announcer.textContent = `${title}. ${body}`;
-  }
-
   tooltipCounter += 1;
   const tooltipId = `breakdown-tooltip-${tooltipCounter}`;
 
@@ -647,7 +632,6 @@ function showTooltip(anchorEl, title, body) {
   tip.className = "tooltip";
   tip.id = tooltipId;
   tip.setAttribute("role", "tooltip");
-  tip.setAttribute("tabindex", "-1");
   tip.innerHTML = `
     <div class="tooltip-title">${escapeHtml(title)}</div>
     <div class="tooltip-body">${escapeHtml(body)}</div>
@@ -679,7 +663,6 @@ function showTooltip(anchorEl, title, body) {
 
   anchorEl.setAttribute("aria-expanded", "true");
   anchorEl.setAttribute("aria-describedby", tooltipId);
-  anchorEl.setAttribute("aria-controls", tooltipId);
 
   activeTooltip = tip;
   activeTooltipButton = anchorEl;
@@ -719,7 +702,6 @@ function renderBreakdownWithInfo(lines) {
       btn.setAttribute("data-info", info);
       btn.setAttribute("data-title", label);
       btn.setAttribute("aria-label", `More information about ${label}`);
-      btn.setAttribute("title", `More information about ${label}`);
       btn.setAttribute("aria-expanded", "false");
       btn.innerHTML = infoIconSVG();
 
@@ -1061,8 +1043,7 @@ function compute() {
       table.innerHTML = `
         <tbody>
           <tr>
-            <th scope="row">Estimate status</th>
-            <td>Select a program to calculate your estimate.</td>
+            <td colspan="2">Select a program to calculate your estimate.</td>
           </tr>
         </tbody>
       `;
@@ -1215,9 +1196,41 @@ function compute() {
 function drawLabelValue(doc, label, value, xLabel, xValue, y) {
   doc.setTextColor(44, 52, 64);
   doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
   doc.text(String(label), xLabel, y);
   doc.setFont("helvetica", "normal");
   doc.text(String(value), xValue, y);
+}
+
+function drawBrandDivider(doc, x, y, width) {
+  const redWidth = width * 0.35;
+  const goldWidth = width * 0.30;
+  const blackWidth = width * 0.35;
+
+  doc.setLineWidth(1.5);
+
+  // Red section
+  doc.setDrawColor(229, 25, 55);
+  doc.line(x, y, x + redWidth, y);
+
+  // Gold section
+  doc.setDrawColor(255, 196, 41);
+  doc.line(x + redWidth, y, x + redWidth + goldWidth, y);
+
+  // Black section
+  doc.setDrawColor(0, 0, 0);
+  doc.line(x + redWidth + goldWidth, y, x + width, y);
+}
+
+function drawSectionHeader(doc, title, x, y, width) {
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(title, x, y);
+
+  // Draw brand divider below title
+  const dividerY = y + 4;
+  drawBrandDivider(doc, x, dividerY, width);
 }
 
 function drawSectionBox(doc, x, y, w, h, title) {
@@ -1233,59 +1246,132 @@ function drawSectionBox(doc, x, y, w, h, title) {
 
 function finishEstimatePDF(doc) {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const left = 16;
   const right = pageWidth - 16;
   const fullWidth = right - left;
 
-  let y = 36;
+  let y = 50;
 
+  // Title
   doc.setTextColor(44, 52, 64);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.text("Student Estimate", left, y);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(90, 90, 90);
-  doc.text(`Generated: ${todayDisplay()}`, right, y, { align: "right" });
-
-  y += 12;
-
-  doc.setFillColor(252, 246, 224);
-  doc.setDrawColor(255, 196, 41);
-  doc.roundedRect(left, y, fullWidth, 20, 4, 4, "FD");
-
-  doc.setTextColor(44, 52, 64);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("Estimated Grand Total", left + 5, y + 8);
-
-  doc.setTextColor(0, 0, 0);
   doc.setFontSize(18);
-  doc.text(fmt(LAST_ESTIMATE.grandTotal), right - 5, y + 13, { align: "right" });
+  doc.text("Cost Estimate Summary", left, y);
+  
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Generated: ${todayDisplay()}`, left, y);
 
-  y += 30;
+  y += 10;
+  
+  // Add divider
+  drawBrandDivider(doc, left, y, fullWidth);
+  y += 10;
 
-  drawSectionBox(doc, left, y, fullWidth, 52, "Selections");
+  // Grand Total - Simple and clean
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(1);
+  doc.rect(left, y, fullWidth, 20, "FD");
+
+  const grandTotalY = y + 10;
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-
-  drawLabelValue(doc, "Level:", LAST_ESTIMATE.level || "N/A", left + 5, left + 30, y + 18);
-  drawLabelValue(doc, "Residency:", LAST_ESTIMATE.residency || "N/A", 106, 134, y + 18);
-
-  drawLabelValue(doc, "Province:", LAST_ESTIMATE.province || "N/A", left + 5, left + 30, y + 28);
-  drawLabelValue(doc, "Load:", LAST_ESTIMATE.load || "N/A", 106, 134, y + 28);
-
-  drawLabelValue(doc, "Cohort:", LAST_ESTIMATE.cohort || "N/A", left + 5, left + 30, y + 38);
-  drawLabelValue(doc, "Summer:", LAST_ESTIMATE.includeSummer ? "Included" : "Not included", 106, 134, y + 38);
+  doc.text("Estimated Grand Total", left + 4, grandTotalY, { baseline: "middle" });
 
   doc.setTextColor(44, 52, 64);
   doc.setFont("helvetica", "bold");
-  doc.text("Program:", left + 5, y + 48);
-  doc.setFont("helvetica", "normal");
-  const wrappedProgram = doc.splitTextToSize(LAST_ESTIMATE.program || "N/A", fullWidth - 36);
-  doc.text(wrappedProgram, left + 30, y + 48);
+  doc.setFontSize(16);
+  doc.text(fmt(LAST_ESTIMATE.grandTotal), right - 4, grandTotalY, {
+    align: "right",
+    baseline: "middle"
+  });
 
-  y += 66;
+  y += 26;
+
+  // Student Selections
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Student Selections", left, y);
+  y += 8;
+
+  doc.setFillColor(248, 248, 248);
+  doc.setDrawColor(220, 220, 220);
+  doc.rect(left, y, fullWidth, 38, "FD");
+
+  doc.setFontSize(9);
+  const selY1 = y + 6;
+  const selY2 = y + 12;
+  const selY3 = y + 18;
+  const selY4 = y + 24;
+  const selY5 = y + 30;
+
+  // Column 1
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Level:", left + 4, selY1);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.level || "N/A", left + 30, selY1);
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Province:", left + 4, selY2);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.province || "N/A", left + 30, selY2);
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Cohort:", left + 4, selY3);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.cohort || "N/A", left + 30, selY3);
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Program:", left + 4, selY4);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  const progText = (LAST_ESTIMATE.program || "N/A").substring(0, 40);
+  doc.text(progText, left + 30, selY4);
+
+  // Column 2
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Residency:", 108, selY1);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.residency || "N/A", 145, selY1);
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Load:", 108, selY2);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.load || "N/A", 145, selY2);
+
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Summer:", 108, selY3);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.includeSummer ? "Included" : "Not included", 145, selY3);
+
+  y += 44;
+
+  // Estimate Breakdown
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Estimate Breakdown", left, y);
+  y += 8;
 
   const rows = [
     ["Tuition (Fall)", fmt(LAST_ESTIMATE.tuitionFall)],
@@ -1298,49 +1384,92 @@ function finishEstimatePDF(doc) {
     ["Meal Plan", fmt(LAST_ESTIMATE.mealTotal)]
   ];
 
-  const breakdownHeight = 18 + rows.length * 9;
-  drawSectionBox(doc, left, y, fullWidth, breakdownHeight, "Estimate Breakdown");
+  const rowHeight = 7;
+  const tableHeight = rows.length * rowHeight + 4;
 
-  let rowY = y + 18;
+  doc.setFillColor(248, 248, 248);
+  doc.setDrawColor(220, 220, 220);
+  doc.rect(left, y, fullWidth, tableHeight, "FD");
+
+  let rowY = y + 4;
   rows.forEach((row, index) => {
-    if (index > 0) {
-      doc.setDrawColor(230, 230, 230);
-      doc.line(left + 5, rowY - 5, right - 5, rowY - 5);
+    doc.setFontSize(9);
+    
+    if (index === 3 || index === 6) {
+      doc.setTextColor(44, 52, 64);
+      doc.setFont("helvetica", "bold");
+    } else {
+      doc.setTextColor(70, 70, 70);
+      doc.setFont("helvetica", "normal");
     }
 
-    doc.setTextColor(70, 70, 70);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(row[0], left + 5, rowY);
-
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
-    doc.text(row[1], right - 5, rowY, { align: "right" });
-
-    rowY += 9;
+    doc.text(row[0], left + 4, rowY);
+    doc.text(row[1], right - 4, rowY, { align: "right" });
+    rowY += rowHeight;
   });
 
-  y += breakdownHeight + 10;
+  y += tableHeight + 10;
 
-  drawSectionBox(doc, left, y, fullWidth, 24, "Optional Selections");
-  doc.setFontSize(10);
-  drawLabelValue(doc, "Housing:", LAST_ESTIMATE.housing || "None", left + 5, left + 32, y + 16);
-  drawLabelValue(doc, "Meal Plan:", LAST_ESTIMATE.mealplan || "None", 106, 138, y + 16);
+  // Optional Selections
+  if (y + 22 > pageHeight - 15) {
+    doc.addPage();
+    y = 20;
+  }
 
-  y += 34;
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Optional Selections", left, y);
+  y += 8;
 
-  doc.setTextColor(110, 110, 110);
-  doc.setFont("helvetica", "italic");
+  doc.setFillColor(248, 248, 248);
+  doc.setDrawColor(220, 220, 220);
+  doc.rect(left, y, fullWidth, 14, "FD");
+
   doc.setFontSize(9);
-  const note = "This document is an estimate only and does not replace official tuition, fee, housing, or meal plan information published by the University of Guelph.";
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Housing:", left + 4, y + 5);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.housing || "None", left + 30, y + 5);
 
-  doc.text(doc.splitTextToSize(note, fullWidth), left, y);
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Meal Plan:", 108, y + 5);
+  doc.setTextColor(44, 52, 64);
+  doc.setFont("helvetica", "bold");
+  doc.text(LAST_ESTIMATE.mealplan || "None", 145, y + 5);
+
+  y += 20;
+
+  // Disclaimer
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  const note = "This document is an estimate only and does not replace official tuition, fee, housing, or meal plan information published by the University of Guelph.";
+  const noteLines = doc.splitTextToSize(note, fullWidth - 4);
+  doc.text(noteLines, left + 2, y);
 
   const fileName = `UofG_Cost_Estimate_${safeFileNamePart(LAST_ESTIMATE.program, "Student")}.pdf`;
   doc.save(fileName);
 }
 
-function generateEstimatePDF() {
+async function loadImageAsDataUrl(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Failed to load image: ${response.status} ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function generateEstimatePDF() {
   compute();
 
   const { jsPDF } = window.jspdf || {};
@@ -1361,53 +1490,37 @@ function generateEstimatePDF() {
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  doc.setFillColor(229, 25, 55);
-  doc.rect(0, 0, pageWidth, 26, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("University of Guelph", left, 12);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("Cost Estimate Summary", left, 19);
-
-  const badgeX = pageWidth - 48;
-  const badgeY = 5;
-  const badgeW = 30;
-  const badgeH = 14;
-
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.5, 1.5, "F");
-
   const logo = new Image();
-  logo.src = "./image.png";
+  let imageLoaded = false;
 
-  logo.onload = function () {
+  try {
+    const imageDataUrl = await loadImageAsDataUrl("./image.png");
+    logo.src = imageDataUrl;
+    await new Promise((resolve, reject) => {
+      logo.onload = resolve;
+      logo.onerror = reject;
+    });
+    imageLoaded = true;
+  } catch (error) {
+    console.warn("image.png not found or could not load.", error);
+  }
+
+  if (imageLoaded) {
     try {
       const imgW = logo.naturalWidth || 1;
       const imgH = logo.naturalHeight || 1;
-      const ratio = Math.min((badgeW - 2) / imgW, (badgeH - 2) / imgH);
-
+      const ratio = Math.min((pageWidth - 32) / imgW, 30 / imgH);
       const finalW = imgW * ratio;
       const finalH = imgH * ratio;
-
-      const x = badgeX + (badgeW - finalW) / 2;
-      const y = badgeY + (badgeH - finalH) / 2;
-
+      const x = left + (pageWidth - 32 - finalW) / 2;
+      const y = 10;
       doc.addImage(logo, "PNG", x, y, finalW, finalH);
     } catch (error) {
       console.warn("Logo could not be added:", error);
     }
+  }
 
-    finishEstimatePDF(doc);
-  };
-
-  logo.onerror = function () {
-    console.warn("image.png not found or could not load.");
-    finishEstimatePDF(doc);
-  };
+  finishEstimatePDF(doc);
 }
 
 /* -----------------------
@@ -1432,7 +1545,7 @@ function initDownloadUI() {
         console.error("Download logging failed:", flowError);
       }
 
-      generateEstimatePDF();
+      await generateEstimatePDF();
     } catch (error) {
       console.error("PDF generation failed:", error);
       showEmailMessage("PDF download failed. Please refresh and try again.", true);
