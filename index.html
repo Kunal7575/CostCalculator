@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>UofG Cost Calculator</title>
+  <title>UofG Cost Estimator</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -517,21 +517,13 @@
       align-items: flex-start;
       gap: 10px;
       margin: 0;
+      cursor: pointer;
     }
 
     .check-row input[type="checkbox"] {
       width: auto;
       margin-top: 3px;
       flex: 0 0 auto;
-    }
-
-    .check-row label {
-      display: inline-block;
-      margin-bottom: 0;
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: var(--text-bold);
-      cursor: pointer;
     }
 
     .fee-label {
@@ -665,13 +657,27 @@
 
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
-  <div id="sr-tooltip-announcer" class="sr-only" aria-live="polite"></div>
+
   <uofg-header></uofg-header>
+   <!-- <uofg-header
+    page-title="Student Planning Tools"
+    page-url="#example"
+  >
+    <a href="/">
+      Tuition Cost Estimator
+    </a>
+    <a href="/">
+      Budget Planner
+    </a>
+    <a href="https://smart-eating-planner.netlify.app/">
+      Eating Planner
+    </a>
+  </uofg-header> -->
 
   <main class="site-main" id="main-content">
     <div class="page">
       <div class="container">
-        <h1 class="page-title">Cost Calculator</h1>
+        <h1 class="page-title">Tuition Cost Estimator</h1>
 
         <section class="card" aria-labelledby="tuition-filters-heading" aria-describedby="tuition-filters-desc">
           <div class="card-header">
@@ -702,16 +708,16 @@
               <div class="field">
                 <label for="province">Province</label>
                 <select id="province" name="province">
-                  <option value="ON">Ontario</option>
-                  <option value="Non-ON">Non-Ontario</option>
-                  <option value="INT">International</option>
+                  <option value="ON">ON</option>
+                  <option value="Non-ON">Outside ON</option>
+                  <option value="INT">INT</option>
                 </select>
               </div>
             </div>
 
             <div class="grid-3 mt-12">
               <div class="field">
-                <label for="load">Load</label>
+                <label for="load">Study load</label>
                 <select id="load" name="load">
                   <option value="Full-time">Full-time</option>
                   <option value="Part-time">Part-time</option>
@@ -730,25 +736,21 @@
             </div>
 
             <div id="summerWrap" class="mt-12" hidden aria-hidden="true">
-            <div class="field">
-              <div class="check-row">
-                <input
-                  type="checkbox"
-                  id="includeSummer"
-                  name="includeSummer"
-                  aria-describedby="includeSummerHelp"
-                />
-                <div>
-                  <label for="includeSummer" style="margin-bottom: 2px;">
-                    Include Summer tuition
-                  </label>
-                  <div class="muted" id="includeSummerHelp">
-                    Only turn on if Summer is relevant for your selection.
+              <div class="field">
+                <label class="check-row" for="includeSummer">
+                  <input
+                    type="checkbox"
+                    id="includeSummer"
+                    name="includeSummer"
+                    aria-describedby="includeSummerHelp"
+                  />
+                  <div>
+                    <div style="font-size:1.2rem; font-weight:800; color: var(--text-bold);">Include Summer tuition</div>
+                    <div class="muted" id="includeSummerHelp">Only turn on if Summer is relevant for your selection.</div>
                   </div>
-                </div>
+                </label>
               </div>
             </div>
-          </div>
           </fieldset>
 
           <div class="section-note" id="tuitionHelp">
